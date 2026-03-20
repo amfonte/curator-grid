@@ -421,7 +421,7 @@ export function GridItem({
         className="relative w-full overflow-hidden"
         style={{ aspectRatio: `${nativeSize.width}/${nativeSize.height}` }}
       >
-        {/* Base: screenshot if available, otherwise favicon + title + open-in-new-tab */}
+        {/* Base layer: screenshot if available, fallback only when iframe is not rendering */}
         {hasScreenshot ? (
           <img
             src={item.screenshot_url || item.file_url || "/placeholder.svg"}
@@ -429,7 +429,7 @@ export function GridItem({
             className="h-full w-full object-cover"
             loading="lazy"
           />
-        ) : (
+        ) : !showIframe ? (
           <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-muted p-4 text-center">
             {faviconSrc ? (
               <img
@@ -458,6 +458,8 @@ export function GridItem({
               </a>
             </div>
           </div>
+        ) : (
+          <div className="h-full w-full bg-muted" aria-hidden="true" />
         )}
         {showIframe && (
           <div
