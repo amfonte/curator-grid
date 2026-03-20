@@ -1,0 +1,1066 @@
+/* Curated App Styles */
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+/* Allow Tailwind-specific at-rules like @custom-variant, @theme, and @apply */
+/* stylelint-disable at-rule-no-unknown */
+:root {
+  /* Grayscale primitives */
+  --gray-10: #FFFFFF;
+  --gray-20: #F5F5F5;
+  --gray-30: #EDEDED;
+  --gray-40: #EBEBEB;
+  --gray-50: #DBDBDB;
+  --gray-60: #B3B3B3;
+  --gray-70: #6F6F6F;
+  --gray-80: #585958;
+  --gray-90: #333333;
+  --gray-100: #262626;
+
+  /* Semantic colors — Light mode */
+  --background: var(--gray-20);
+  --foreground: var(--gray-90);
+  --card: var(--gray-10);
+  --card-foreground: var(--gray-90);
+  --popover: var(--gray-10);
+  --popover-foreground: var(--gray-90);
+  --primary: var(--gray-100);
+  --primary-foreground: var(--gray-10);
+  --secondary: var(--gray-30);
+  --secondary-foreground: var(--gray-80);
+  --muted: var(--gray-30);
+  --muted-foreground: var(--gray-70);
+  --accent: var(--gray-30);
+  --accent-foreground: var(--gray-80);
+  --destructive: #dc2626;
+  --destructive-foreground: #FFFFFF;
+  --border: var(--gray-60);
+  --input: var(--gray-50);
+  --ring: var(--gray-80);
+  --overlay: var(--gray-100);
+  --icon: var(--gray-100);
+  /* Figma-aliased typography tokens */
+  --Text-BodyPrimary: var(--foreground);
+  --font-family-All: var(--font-sans);
+  --font-size-Base: 1rem;
+  --font-line-height-Base: 1.5rem;
+  --font-weight-Regular: 400;
+  /* Surfaces */
+  /* Surface Tertiary — Grayscale/30 in light mode (see docs/DESIGN-SYSTEM.md) */
+  --surface-tertiary: var(--gray-30);
+  --radius: 0.625rem;
+
+  /* Sidebar */
+  --sidebar: var(--gray-20);
+  --sidebar-foreground: var(--gray-90);
+  --sidebar-primary: var(--gray-100);
+  --sidebar-primary-foreground: var(--gray-10);
+  --sidebar-accent: var(--gray-30);
+  --sidebar-accent-foreground: var(--gray-80);
+  --sidebar-border: var(--gray-60);
+  --sidebar-ring: var(--gray-80);
+}
+
+.dark {
+  /* Semantic colors — Dark mode */
+  --background: var(--gray-80);
+  --foreground: var(--gray-10);
+  --card: var(--gray-90);
+  --card-foreground: var(--gray-10);
+  --popover: var(--gray-90);
+  --popover-foreground: var(--gray-10);
+  --primary: var(--gray-10);
+  --primary-foreground: var(--gray-100);
+  --secondary: var(--gray-70);
+  --secondary-foreground: var(--gray-20);
+  --muted: var(--gray-70);
+  --muted-foreground: var(--gray-30);
+  --accent: var(--gray-70);
+  --accent-foreground: var(--gray-20);
+  --destructive: #ef4444;
+  --destructive-foreground: #FFFFFF;
+  --border: var(--gray-60);
+  --input: var(--gray-100);
+  --ring: var(--gray-10);
+  --overlay: var(--gray-100);
+  --icon: var(--gray-10);
+  /* Surfaces — Dark */
+  /* Surface Tertiary — Grayscale/70 in dark mode (see docs/DESIGN-SYSTEM.md) */
+  --surface-tertiary: var(--gray-70);
+  --Text-BodyPrimary: var(--foreground);
+
+  /* Sidebar — Dark */
+  --sidebar: var(--gray-90);
+  --sidebar-foreground: var(--gray-10);
+  --sidebar-primary: var(--gray-10);
+  --sidebar-primary-foreground: var(--gray-100);
+  --sidebar-accent: var(--gray-70);
+  --sidebar-accent-foreground: var(--gray-20);
+  --sidebar-border: var(--gray-60);
+  --sidebar-ring: var(--gray-10);
+}
+
+@theme {
+  /* Only expose design-system tokens; clear Tailwind default colors so the
+   * token picker and autocomplete show Curator tokens only (see docs/DESIGN-SYSTEM.md). */
+  --color-*: initial;
+}
+
+@theme inline {
+  /* color-black used by Tailwind's overlay/80 utility; map to design system overlay (Grayscale/100) */
+  --color-black: var(--gray-100);
+  /* Typography — Host Grotesk */
+  --font-sans: 'Host Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, monospace;
+
+  /* Font sizes and line heights from Figma */
+  --text-sm: 0.75rem;
+  --text-sm--line-height: 1rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.5rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 2rem;
+  --text-xl--line-height: 2.75rem;
+
+  /* Colors */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface-tertiary: var(--surface-tertiary);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-overlay: var(--overlay);
+  --color-icon: var(--icon);
+
+  /* Radius */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Sidebar */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* DialKit is intended for dev tuning; ensure its fixed panel stays interactive
+   even when Radix modals are open (so clicks don't fall through). */
+.dialkit-panel,
+.dialkit-panel-inner,
+.dialkit-root {
+  pointer-events: auto !important;
+}
+
+/* Keep above Radix modal layers reliably */
+.dialkit-panel {
+  z-index: 100000 !important;
+}
+
+/* Lift panel so it doesn't sit under the Next badge. */
+.dialkit-panel[data-position="bottom-left"] {
+  bottom: 56px !important; /* 16px default + ~40px */
+  left: 16px;
+}
+
+/* Shared text-link underline animation with default visible underline. */
+.link-wavy-underline {
+  text-decoration: none;
+  position: relative;
+  display: inline-block;
+}
+.link-wavy-underline::before,
+.link-wavy-underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: currentColor;
+}
+
+/* Base visible underline layer. */
+.link-wavy-underline::before {
+  transform: scaleX(1);
+  transform-origin: right;
+  transition: transform 200ms cubic-bezier(0.65, 0, 0.35, 1) 200ms;
+}
+
+/* Sweep layer used for the second half of the cycle. */
+.link-wavy-underline::after {
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 200ms cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* Hover in:
+   1) visible line un-draws left -> right
+   2) sweep layer re-draws left -> right */
+.link-wavy-underline:hover::before {
+  transform: scaleX(0);
+  transform-origin: right;
+  transition-delay: 0ms;
+}
+.link-wavy-underline:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+  transition-delay: 200ms;
+}
+
+/* Masonry grid layout */
+.masonry-grid {
+  --masonry-gutter: 48px;
+  display: flex;
+  width: auto;
+  margin-left: calc(-1 * var(--masonry-gutter));
+}
+
+.masonry-grid-column {
+  padding-left: var(--masonry-gutter);
+  min-width: 0;
+  box-sizing: border-box;
+  background-clip: padding-box;
+}
+
+/* Prevent hover-driven width animations inside tiles from changing masonry column width. */
+.masonry-grid-column > * {
+  contain: inline-size;
+}
+
+/* At 6 columns, 48px gutters make each tile too narrow and can trigger hover overflow.
+   Use a slightly tighter gutter only for this density. */
+.masonry-grid.masonry-grid--cols-6 {
+  --masonry-gutter: 40px;
+}
+
+/* Drag-and-drop area: dotted border + document icon animations */
+@keyframes dnd-border-spin {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 24px 0;
+  }
+}
+
+.dnd-dropzone {
+  background-image: repeating-linear-gradient(
+    to right,
+    transparent 0,
+    transparent 6px,
+    rgba(0, 0, 0, 0.08) 6px,
+    rgba(0, 0, 0, 0.08) 10px
+  );
+  background-repeat: repeat-x;
+  background-position: 0 0;
+  background-size: 24px 2px;
+  border-radius: 16px;
+}
+
+.dnd-dropzone-active {
+  animation: dnd-border-spin 0.6s linear infinite;
+}
+
+.dnd-dropzone-loading {
+  animation: dnd-border-spin 0.6s linear infinite;
+  opacity: 0.9;
+}
+
+@keyframes empty-canvas-border-spin {
+  from {
+    background-position:
+      0 0,
+      0 100%,
+      0 0,
+      100% 0;
+  }
+  to {
+    background-position:
+      21px 0,
+      21px 100%,
+      0 21px,
+      100% 21px;
+  }
+}
+
+.dnd-documents-icon {
+  position: relative;
+  width: 56px;
+  height: 44px;
+}
+
+.dnd-doc {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform-origin: center bottom;
+  /* Only transform animates; keep opacity constant to avoid fade-in */
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.4, 1);
+}
+
+.dnd-doc-front {
+  /* Default: single, upright document */
+  transform: translateX(0) rotate(0deg);
+  z-index: 2; /* ensure front sheet is visually on top */
+}
+
+.dnd-doc-back {
+  /* Sits directly behind front doc; fully opaque so there is no fade-in */
+  transform: translateX(0) translateY(0) rotate(0deg);
+  z-index: 1;
+}
+
+.dnd-dropzone:hover .dnd-doc-front {
+  /* Front sheet: up and to the right with -10° tilt (inverted per latest request) */
+  transform: translateX(16px) translateY(-10px) rotate(-10deg);
+}
+
+.dnd-dropzone:hover .dnd-doc-back {
+  /* Back sheet: slight left shift + 3° tilt */
+  transform: translateX(-4px) rotate(3deg);
+}
+
+.dnd-dropzone-active .dnd-doc-front {
+  transform: translateX(16px) translateY(-10px) rotate(-10deg);
+}
+
+.dnd-dropzone-active .dnd-doc-back {
+  transform: translateX(-4px) rotate(3deg);
+}
+
+/* Reuse the same doc icon interaction on empty-canvas style dropzones. */
+/* Empty collection canvas dropzone — large dashed panel in collection view. */
+.empty-canvas-dropzone {
+  position: relative;
+  /* Mobile-first: fixed 400×400 panel for phones */
+  height: 400px;
+  width: 400px;
+  max-width: 100%;
+  margin-inline: auto;
+  border-radius: 24px;
+  background-color: var(--surface-tertiary);
+}
+
+/* Extra-small viewports (< 432px): shrink width so the panel never crops offscreen */
+@media (max-width: 431px) {
+  .empty-canvas-dropzone {
+    /* Let the dropzone flex with the layout container; rely on page padding */
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+/* From sm (≥640px) upward, use the original desktop size (690×520). */
+@media (min-width: 640px) {
+  .empty-canvas-dropzone {
+    height: 520px;
+    width: 100%;
+    max-width: 690px;
+  }
+}
+
+/* Responsive variant for the Add Item side panel: let the dropzone
+   fill the dialog column instead of using the fixed canvas size. */
+.add-item-panel .empty-canvas-dropzone {
+  width: 100%;
+  max-width: 100%;
+  height: 440px;
+  margin-inline: 0;
+}
+
+/* SVG border wrapper and rect for the dashed outline. */
+.empty-canvas-border {
+  position: absolute;
+  inset: 0;
+  /* Ensure SVG border always matches dropzone width & height at all breakpoints */
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.empty-canvas-border-rect {
+  fill: none !important;
+  stroke: var(--gray-60);
+  stroke-width: 2;
+  stroke-dasharray: 13 8;
+}
+
+.empty-canvas-dropzone-active .empty-canvas-border-rect {
+  animation: empty-canvas-stroke-spin 0.6s linear infinite;
+}
+
+@media (max-width: 767px) {
+  .empty-canvas-dropzone .empty-canvas-border {
+    display: none;
+  }
+}
+
+@keyframes empty-canvas-stroke-spin {
+  to {
+    stroke-dashoffset: -21;
+  }
+}
+
+.empty-canvas-documents-icon {
+  position: relative;
+  width: 84px;
+  height: 100px;
+}
+
+.empty-canvas-doc {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform-origin: center bottom;
+}
+
+.empty-canvas-doc-front {
+  /* Default: single, upright document */
+  transform: translateX(0) rotate(0deg);
+  z-index: 2; /* ensure front sheet is visually on top */
+}
+
+.empty-canvas-doc-back {
+  /* Sits directly behind front doc; fully opaque so there is no fade-in */
+  transform: translateX(0) translateY(0) rotate(0deg);
+  z-index: 1;
+}
+
+@keyframes dnd-doc-shuffle-front {
+  0% {
+    transform: translateX(3px) rotate(3deg);
+  }
+  50% {
+    transform: translateX(-2px) rotate(-4deg);
+  }
+  100% {
+    transform: translateX(3px) rotate(3deg);
+  }
+}
+
+@keyframes dnd-doc-shuffle-back {
+  0% {
+    transform: translateX(-6px) rotate(-10deg);
+  }
+  50% {
+    transform: translateX(2px) rotate(2deg);
+  }
+  100% {
+    transform: translateX(-6px) rotate(-10deg);
+  }
+}
+
+.dnd-dropzone-loading .dnd-doc-front {
+  animation: dnd-doc-shuffle-front 0.8s cubic-bezier(0.32, 0.72, 0, 1) infinite;
+}
+
+.dnd-dropzone-loading .dnd-doc-back {
+  animation: dnd-doc-shuffle-back 0.8s cubic-bezier(0.32, 0.72, 0, 1) infinite;
+}
+
+/* Error emphasis: brief horizontal jiggle, translateX only. */
+@keyframes dnd-error-jiggle-x {
+  0% {
+    transform: translateX(0);
+  }
+  15% {
+    transform: translateX(-10px);
+  }
+  30% {
+    transform: translateX(10px);
+  }
+  45% {
+    transform: translateX(-7px);
+  }
+  60% {
+    transform: translateX(7px);
+  }
+  75% {
+    transform: translateX(-4px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.dnd-dropzone-error-jiggle {
+  animation: dnd-error-jiggle-x 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  will-change: transform;
+}
+
+/* Dialog panel overflow is normally hidden; temporarily allow overflow during short jiggles. */
+.add-item-panel-overflow-visible {
+  overflow: visible !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dnd-dropzone-error-jiggle {
+    /* Keep a subtle jiggle for reduced-motion users (still respects translateX-only). */
+    animation: dnd-error-jiggle-x 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+}
+
+/* macOS-style "poof" — scale + fade + blur for folder cancel */
+@keyframes poof {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    transform: scale(1.1);
+    opacity: 0;
+    filter: blur(12px);
+  }
+}
+
+.animate-poof {
+  animation: poof 320ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Grid slide right when create folder appears — runs on mount, no React state delay (avoids jitter) */
+@keyframes grid-slide-in-right {
+  from {
+    transform: translateX(calc(-335px - 20px));
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.grid-slide-in-right {
+  animation: grid-slide-in-right var(--grid-slide-ms, 350ms) cubic-bezier(0.34, 1.2, 0.64, 1) both;
+  will-change: transform;
+}
+
+/* Grid slide left when cancel — same duration/easing as slide-right */
+@keyframes grid-slide-out-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(-335px - 20px));
+  }
+}
+
+.grid-slide-out-left {
+  animation: grid-slide-out-left var(--grid-slide-ms, 350ms) cubic-bezier(0.34, 1.2, 0.64, 1) both;
+  will-change: transform;
+}
+
+/* After slide-out, slide back to 0 when create card unmounts (avoids snap) */
+@keyframes grid-slide-back-to-zero {
+  from {
+    transform: translateX(calc(-335px - 20px));
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.grid-slide-back-to-zero {
+  animation: grid-slide-back-to-zero var(--grid-slide-ms, 350ms) cubic-bezier(0.34, 1.2, 0.64, 1) both;
+  will-change: transform;
+}
+
+/* Bulk bar slide up from bottom when selection is active */
+@keyframes bulk-bar-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-bulk-bar-in {
+  animation: bulk-bar-in 0.35s cubic-bezier(0.33, 1, 0.68, 1) both;
+  will-change: transform;
+}
+
+/* Add item panel: slide in from right (floating full-height panel) */
+@keyframes add-item-panel-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes add-item-panel-out {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.add-item-panel[data-state="open"] {
+  animation: add-item-panel-in 0.25s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+.add-item-panel[data-state="closed"] {
+  animation: add-item-panel-out 0.2s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+@media (max-width: 767px) {
+  @keyframes add-item-panel-in {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes add-item-panel-out {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(100%);
+    }
+  }
+}
+
+/* Bulk bar slide down on exit */
+@keyframes bulk-bar-out {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+.animate-bulk-bar-out {
+  animation: bulk-bar-out 0.35s cubic-bezier(0.33, 1, 0.68, 1) both;
+  will-change: transform;
+}
+
+/* Animatable gradient colors for CTA hover (smooth transition via @property). */
+@property --cta-primary-top {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #585958;
+}
+@property --cta-primary-bottom {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #262626;
+}
+@property --cta-secondary-top {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #ffffff;
+}
+@property --cta-secondary-bottom {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #dbdbdb;
+}
+
+/* CTA Button styling — see docs/CTA-button-styling.md
+   Use button.cta-primary so we override Tailwind preflight (button background).
+   Hover: gradient colors transition smoothly via @property (fallback: instant change in unsupported browsers). */
+button.cta-primary,
+.cta-primary {
+  --cta-border: var(--gray-100);
+  --cta-primary-top: var(--gray-80);
+  --cta-primary-bottom: var(--gray-100);
+  background: linear-gradient(to bottom, var(--cta-primary-top), var(--cta-primary-bottom)) !important;
+  border: 2px solid var(--cta-border);
+  box-shadow: inset 0px 1.5px 0px 0px rgba(255, 255, 255, 0.35), inset 0px 7px 6px 0px rgba(38, 38, 38, 1), inset 0px -5px 6px 0px rgba(255, 255, 255, 0.25);
+  color: var(--gray-10) !important;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.5rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, --cta-primary-top 0.15s ease, --cta-primary-bottom 0.15s ease !important;
+}
+button.cta-primary:hover,
+.cta-primary:hover {
+  cursor: pointer;
+  --cta-primary-top: var(--gray-90);
+  --cta-primary-bottom: var(--gray-100);
+}
+button.cta-primary:active,
+.cta-primary:active {
+  transform: scale(0.97);
+}
+
+button.cta-secondary,
+.cta-secondary {
+  --cta-border: var(--gray-50);
+  --cta-secondary-top: var(--gray-10);
+  --cta-secondary-bottom: var(--gray-50);
+  background: linear-gradient(to bottom, var(--cta-secondary-top), var(--cta-secondary-bottom)) !important;
+  border: 2px solid var(--cta-border);
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.7), inset 0 8px 6px var(--gray-40), inset 0 -6px 6px rgba(255, 255, 255, 0.8);
+  color: var(--gray-90) !important;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.5rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, --cta-secondary-top 0.15s ease, --cta-secondary-bottom 0.15s ease !important;
+}
+button.cta-secondary:hover,
+.cta-secondary:hover {
+  cursor: pointer;
+  --cta-secondary-top: var(--gray-30);
+  --cta-secondary-bottom: var(--gray-50);
+}
+button.cta-secondary:active,
+.cta-secondary:active {
+  transform: scale(0.97);
+}
+
+/* Full-width text CTAs (e.g. auth submit buttons with w-full) use a subtler press scale */
+button.cta-primary.w-full:active,
+.cta-primary.w-full:active,
+button.cta-secondary.w-full:active,
+.cta-secondary.w-full:active {
+  transform: scale(0.99);
+}
+
+/* Icon-only CTA: stronger scale so press is as noticeable as on wide text buttons */
+button.cta-primary.cta-icon:active,
+.cta-primary.cta-icon:active,
+button.cta-secondary.cta-icon:active,
+.cta-secondary.cta-icon:active {
+  transform: scale(0.96);
+}
+
+/* Size slider thumb: pressed scale on inner (so we don't override Radix's transform).
+   Gradient hover/pressed is driven by React state in SizeSlider/SizeStepDots.
+   Spring transition on thumb *wrapper* position for track clicks only; disabled when dragging.
+   Radix sets the wrapper's `left` and inline `transform: translateX(-50%)`; we need full
+   translate(-50%, -50%) for vertical center, so we override with !important. We also force
+   the root to have a definite height so top: 50% is correct. */
+.size-slider-root {
+  min-height: 3rem; /* 48px — ensure 50% is meaningful */
+}
+.size-slider-root span:has(.size-slider-thumb) {
+  left: var(--thumb-left-px) !important;
+  top: 50%;
+  transform: translate(0, -50%) !important; /* left-aligned so thumb spans full 40px; Radix uses target so thumb must be the hit target */
+  transition: left 0.3s cubic-bezier(0.34, 1.25, 0.6, 1);
+}
+.size-slider-root span:has(.size-slider-thumb[data-dragging="true"]) {
+  transition: none;
+}
+.size-slider-thumb {
+  cursor: pointer;
+}
+.size-slider-thumb-inner {
+  pointer-events: none; /* so Radix sees thumb as target, not child — prevents track-click from pointer position */
+  transition: transform 0.15s ease;
+}
+.size-slider-thumb-inner:active,
+.size-slider-thumb[data-state="active"] .size-slider-thumb-inner {
+  transform: scale(0.96);
+}
+
+/* Disabled CTA buttons (e.g. during sign in, create account, saving) keep full opacity.
+   In utilities layer so it overrides Tailwind's disabled:opacity-50. */
+@layer utilities {
+  button.cta-primary:disabled,
+  .cta-primary:disabled,
+  button.cta-secondary:disabled,
+  .cta-secondary:disabled {
+    opacity: 1;
+  }
+
+  /* Header re-entry animation: slide in from top edge when user scrolls back up near the top. */
+  @keyframes curator-header-slide-down {
+    from {
+      transform: translateY(-100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  .animate-curator-header-slide-down {
+    animation: curator-header-slide-down 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Figma-style dropdown popover arrow using exported asset. */
+  .dropdown-popover {
+    position: relative;
+  }
+
+  .dropdown-popover::after {
+    content: "";
+    position: absolute;
+    width: 32px;
+    height: 11px;
+    background-repeat: no-repeat;
+    background-size: 32px 11px;
+    filter:
+      drop-shadow(0 1px 2px rgba(0, 0, 0, 0.02))
+      drop-shadow(0 4px 4px rgba(0, 0, 0, 0.02))
+      drop-shadow(0 9px 5px rgba(0, 0, 0, 0.01));
+  }
+
+  .dropdown-popover[data-side="bottom"]::after {
+    top: -11px;
+    transform: scaleY(-1);
+    background-image: url("https://www.figma.com/api/mcp/asset/f2e0400e-5993-47d8-9206-0f9f67cf1913");
+  }
+
+  .dropdown-popover[data-side="top"]::after {
+    bottom: -11px;
+    background-image: url("https://www.figma.com/api/mcp/asset/f2e0400e-5993-47d8-9206-0f9f67cf1913");
+  }
+
+  /* Centered pointer (e.g. Move to collection) */
+  .dropdown-popover[data-align="center"]::after {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  /* Right-aligned pointer for account icon menu (align=end). */
+  .dropdown-popover[data-align="end"][data-side="bottom"]::after {
+    left: auto;
+    right: 8px;
+    transform: scaleY(-1);
+  }
+
+  .dropdown-popover[data-align="end"][data-side="top"]::after {
+    left: auto;
+    right: 8px;
+    transform: none;
+  }
+}
+
+/* Form field styling — see docs/form-and-search-field-styling.md
+   Pill-shaped inputs with 0.15s transitions for border, background, and focus ring. */
+.form-field-input {
+  /* Default uses surface/primary */
+  background-color: var(--gray-20);
+  border-radius: 24px;
+  padding: 10px 16px;
+  border: 2px solid transparent;
+  box-shadow: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.5rem;
+  color: var(--foreground);
+  width: 100%;
+}
+.form-field-input::placeholder {
+  color: var(--muted-foreground);
+}
+.form-field-input:hover {
+  /* Hover elevates to surface/secondary + border */
+  background-color: var(--gray-10);
+  border-color: var(--gray-60);
+}
+/* Also trigger input hover when hovering anywhere over the form field wrapper (label + gap + input) */
+.form-field:hover .form-field-input {
+  background-color: var(--gray-10);
+  border-color: var(--gray-60);
+}
+.form-field-input:focus {
+  outline: none;
+  background-color: var(--gray-10);
+  border-color: var(--gray-60);
+  box-shadow: 0 0 0 4px var(--gray-50);
+}
+.form-field-input:focus-visible {
+  outline: none;
+  background-color: var(--gray-10);
+  border-color: var(--gray-60);
+  box-shadow: 0 0 0 4px var(--gray-50);
+}
+.form-field-input[data-state="open"] {
+  background-color: var(--gray-10);
+  border-color: var(--gray-60);
+  box-shadow: 0 0 0 4px var(--gray-50);
+}
+.form-field-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.dark .form-field-input {
+  background-color: var(--background);
+}
+.dark .form-field-input:hover,
+.dark .form-field-input:focus,
+.dark .form-field-input:focus-visible {
+  border-color: var(--border);
+}
+.dark .form-field-input:focus,
+.dark .form-field-input:focus-visible {
+  box-shadow: 0 0 0 4px var(--gray-80);
+}
+
+/* Primary headline — large, extra bold, high line-height (32/44).
+   Global type style for key hero/empty-state messaging. */
+.headline-primary {
+  font-family: var(--font-sans);
+  font-size: var(--text-xl);
+  line-height: var(--text-xl--line-height);
+  font-weight: 800;
+  color: var(--foreground);
+}
+
+/* Editable collection headline — behaves like plain text, no focus ring/border. */
+.editable-headline[contenteditable="true"] {
+  outline: none;
+  border: none;
+}
+.editable-headline[contenteditable="true"]:focus,
+.editable-headline[contenteditable="true"]:focus-visible {
+  outline: none;
+  border: none;
+}
+
+/* Search field styling — see docs/form-and-search-field-styling.md
+   Icon + text in a pill container with 0.15s transitions. */
+.search-field {
+  background-color: var(--gray-10);
+  border-radius: 24px;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 2px solid transparent;
+  box-shadow: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+.search-field:hover {
+  border-color: var(--gray-60);
+}
+.search-field:focus-within {
+  border-color: var(--gray-60);
+  box-shadow: 0 0 0 4px var(--gray-50);
+}
+
+/* Dropdown item highlight — inner pill so hover/selected state doesn't touch edges */
+.select-item-inner {
+  border-radius: 24px;
+  margin: 4px 0; /* 4px above first and below last; 4px between items */
+}
+[data-highlighted] > .select-item-inner {
+  background-color: var(--gray-20);
+}
+
+/* Auth logo background pattern */
+.auth-logo-pattern {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.auth-logo-grid {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  min-height: 100%;
+  overflow: visible;
+}
+
+/* Auth logo rows: clip container; stagger via --tile-offset on inner */
+.auth-logo-row {
+  --tile-step: 71px;
+  --tile-offset: 0px;
+
+  position: relative;
+  height: 58px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* Brick / staggered layout: even rows offset half a tile */
+.auth-logo-row:nth-child(even) {
+  --tile-offset: calc(-0.5 * var(--tile-step));
+}
+
+.auth-logo-row-inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: max(200vw, 4000px);
+  background-image: url("/logo/bg-logo-tile.svg");
+  background-repeat: repeat-x;
+  background-size: auto 58px;
+  background-position-x: var(--tile-offset);
+  will-change: transform;
+}
+
+.auth-logo-row--left .auth-logo-row-inner {
+  animation: auth-logo-scroll-left 33.75s linear infinite;
+}
+
+.auth-logo-row--right .auth-logo-row-inner {
+  animation: auth-logo-scroll-right 33.75s linear infinite;
+}
+
+@keyframes auth-logo-scroll-left {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(calc(-1 * var(--tile-step)), 0, 0); }
+}
+
+@keyframes auth-logo-scroll-right {
+  from { transform: translate3d(calc(-1 * var(--tile-step)), 0, 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+
+/* Dashboard empty-state quote: apply 32px horizontal padding on small screens only. */
+@media (max-width: 767px) {
+  .dashboard-quote-sm-only-pad {
+    padding-inline: 32px;
+  }
+
+  .dashboard-first-cta-sm-docked {
+    position: fixed;
+    left: 50%;
+    bottom: 32px;
+    transform: translateX(-50%);
+    z-index: 40;
+  }
+}

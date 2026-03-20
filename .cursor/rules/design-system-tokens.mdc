@@ -1,0 +1,14 @@
+---
+description: Use only design-system tokens from docs/DESIGN-SYSTEM.md and app/globals.css
+globs: "**/*.{css,tsx,jsx,ts,js}"
+alwaysApply: false
+---
+
+# Design system tokens only
+
+When styling UI (Tailwind classes, CSS variables, or inline styles), use **only** the tokens defined in:
+
+- **docs/DESIGN-SYSTEM.md** — Figma variables and semantic names (Grayscale primitives, Text/Surface/Icon/Border semantics, typography).
+- **app/globals.css** — `:root` / `.dark` and `@theme inline` (e.g. `--background`, `--foreground`, `--gray-*`, semantic colors).
+
+Do **not** use Tailwind default theme tokens that are not in the design system (e.g. arbitrary Tailwind color names, unsupported font sizes, or spacing values not aligned with the design system). Prefer semantic utilities: `bg-background`, `text-foreground`, `border-border`, `text-muted-foreground`, `bg-primary`, etc.

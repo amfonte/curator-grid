@@ -1,0 +1,6 @@
+{
+  "files.associations": {
+    ".next/**/*.css": "plaintext"
+  },
+  "css.customData": [".vscode/curator-tokens.css-data.json"]
+}
