@@ -66,6 +66,11 @@ export function GridItem({
   useEffect(() => {
     if (!showIframe || !containerRef.current) return
     const el = containerRef.current
+    if (typeof ResizeObserver === "undefined") {
+      const rect = el.getBoundingClientRect()
+      setContainerSize(rect.width > 0 && rect.height > 0 ? { width: rect.width, height: rect.height } : null)
+      return
+    }
     const ro = new ResizeObserver((entries) => {
       const { width, height } = entries[0]?.contentRect ?? { width: 0, height: 0 }
       setContainerSize(width > 0 && height > 0 ? { width, height } : null)
