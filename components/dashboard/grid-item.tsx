@@ -103,7 +103,7 @@ export function GridItem({
 
     return (
       <div
-        className={cn("group mb-4 w-full", capWidth != null && "mx-auto")}
+        className={cn("group mb-8 w-full", capWidth != null && "mx-auto")}
         style={capWidth != null ? { maxWidth: `${capWidth}px` } : undefined}
       >
         {/* Header for lg+: title truncates; actions reveal on hover/selected. */}
@@ -293,7 +293,7 @@ export function GridItem({
 
   return (
     <div
-      className="group mb-4 w-full mx-auto"
+      className="group mb-8 w-full mx-auto"
       style={{ maxWidth: wrapperMaxWidth }}
     >
       {/* Header for lg+: title truncates; actions reveal on hover/selected. */}
