@@ -846,7 +846,7 @@ export function AddItemDialog({
             {/* Footer button: shown only when we can actually "Save"/submit. */}
             {activeTab === "url" || inImageSaveStage ? (
               <Button
-                className="w-full rounded-[48px] px-5 py-3"
+                className="w-full rounded-[48px] px-5 py-3 disabled:!opacity-50"
                 disabled={loading || (activeTab === "url" ? !url.trim() : !currentFile)}
                 onClick={() => {
                   if (activeTab === "url") {

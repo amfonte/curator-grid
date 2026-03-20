@@ -40,12 +40,13 @@ export function EditItemDialog({
   onItemDeleted,
 }: EditItemDialogProps) {
   const supabase = createClient()
+  const initialTitle = item.title || ""
+  const initialNotes = item.notes || ""
+  const initialBoard = item.item_boards?.[0]?.board_id || ""
   const [loading, setLoading] = useState(false)
-  const [title, setTitle] = useState(item.title || "")
-  const [notes, setNotes] = useState(item.notes || "")
-  const [selectedBoard, setSelectedBoard] = useState(
-    item.item_boards?.[0]?.board_id || "",
-  )
+  const [title, setTitle] = useState(initialTitle)
+  const [notes, setNotes] = useState(initialNotes)
+  const [selectedBoard, setSelectedBoard] = useState(initialBoard)
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null)
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null)
   const [isDragActive, setIsDragActive] = useState(false)
@@ -125,12 +126,28 @@ export function EditItemDialog({
   }
 
   useEffect(() => {
+    if (!open) return
+    setTitle(initialTitle)
+    setNotes(initialNotes)
+    setSelectedBoard(initialBoard)
+    setScreenshotFile(null)
+    setScreenshotPreview(null)
+    setDropzoneError(null)
+  }, [open, item.id, initialTitle, initialNotes, initialBoard])
+
+  useEffect(() => {
     return () => {
       if (dropzoneErrorJiggleTimeoutRef.current) {
         clearTimeout(dropzoneErrorJiggleTimeoutRef.current)
       }
     }
   }, [])
+
+  const hasChanges =
+    title !== initialTitle ||
+    notes !== initialNotes ||
+    selectedBoard !== initialBoard ||
+    screenshotFile !== null
 
   function handleScreenshotFileSelected(nextFile: File | null) {
     if (!nextFile) {
@@ -195,6 +212,7 @@ export function EditItemDialog({
   }
 
   async function handleSave() {
+    if (!hasChanges || loading) return
     setLoading(true)
     try {
       let screenshotUrl: string | null | undefined = undefined
@@ -509,9 +527,9 @@ export function EditItemDialog({
 
           <div className="flex items-center gap-3 pt-2">
             <Button
-              className="w-full rounded-[48px] px-5 py-3"
+              className="w-full rounded-[48px] px-5 py-3 disabled:!opacity-50"
               onClick={handleSave}
-              disabled={loading}
+              disabled={loading || !hasChanges}
             >
               {loading && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
               Save changes
