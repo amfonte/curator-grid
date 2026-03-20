@@ -30,6 +30,7 @@ export function GridItem({
   const supabase = createClient()
   const [iframeError, setIframeError] = useState(false)
   const [faviconError, setFaviconError] = useState(false)
+  const [isMobileViewport, setIsMobileViewport] = useState(false)
   // For image items without stored dimensions (legacy): measure on load so we never upscale (PRD).
   const [measuredImageSize, setMeasuredImageSize] = useState<{ width: number; height: number } | null>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
@@ -61,7 +62,16 @@ export function GridItem({
     ? "h-9 w-9 shrink-0 text-foreground hover:bg-accent hover:text-accent-foreground [&_svg]:size-6"
     : "h-7 w-7 shrink-0 text-foreground hover:bg-accent hover:text-accent-foreground [&_svg]:size-4"
   const hasScreenshot = !!(item.screenshot_url || item.file_url)
-  const showIframe = !hasScreenshot && !item.iframe_blocked && !iframeError
+  const showIframe = !isMobileViewport && !hasScreenshot && !item.iframe_blocked && !iframeError
+
+  useEffect(() => {
+    const updateViewport = () => {
+      setIsMobileViewport(window.innerWidth <= 767)
+    }
+    updateViewport()
+    window.addEventListener("resize", updateViewport)
+    return () => window.removeEventListener("resize", updateViewport)
+  }, [])
 
   useEffect(() => {
     if (!showIframe || !containerRef.current) return
