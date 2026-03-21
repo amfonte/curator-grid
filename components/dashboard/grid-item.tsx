@@ -7,7 +7,7 @@ import { cn, getViewportDimensions } from "@/lib/utils"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogOverlay, DialogPortal } from "@/components/ui/dialog"
-import { Pencil, Trash2, ExternalLink, Globe, Maximize2, X } from "lucide-react"
+import { Pencil, Trash2, Globe, Maximize2, X } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
 interface GridItemProps {
@@ -32,7 +32,6 @@ export function GridItem({
   const [iframeLoaded, setIframeLoaded] = useState(false)
   const [iframeLikelyBlocked, setIframeLikelyBlocked] = useState(false)
   const [faviconError, setFaviconError] = useState(false)
-  const [isMobileViewport, setIsMobileViewport] = useState(false)
   // For image items without stored dimensions (legacy): measure on load so we never upscale (PRD).
   const [measuredImageSize, setMeasuredImageSize] = useState<{ width: number; height: number } | null>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
@@ -72,15 +71,6 @@ export function GridItem({
     setIframeLikelyBlocked(false)
     iframeRequestStartedAtRef.current = showIframe ? Date.now() : null
   }, [item.id, item.original_url, showIframe])
-
-  useEffect(() => {
-    const updateViewport = () => {
-      setIsMobileViewport(window.innerWidth <= 767)
-    }
-    updateViewport()
-    window.addEventListener("resize", updateViewport)
-    return () => window.removeEventListener("resize", updateViewport)
-  }, [])
 
   useEffect(() => {
     if (!showIframe || !containerRef.current) return
