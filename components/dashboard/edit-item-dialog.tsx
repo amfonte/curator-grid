@@ -280,17 +280,19 @@ export function EditItemDialog({
           <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-auto px-1 -mx-1">
             <div className="flex flex-col gap-6">
               <FormField label="Title (optional)" htmlFor="edit-title" className="gap-[8px]">
-                <Input
-                  id="edit-title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Give it a name"
-                />
-                {item.type === "url" && item.original_url && (
-                  <p className="truncate px-1 text-sm text-muted-foreground">
-                    {item.original_url}
-                  </p>
-                )}
+                <div className="flex flex-col gap-2">
+                  <Input
+                    id="edit-title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Give it a name"
+                  />
+                  {item.type === "url" && item.original_url && (
+                    <p className="truncate px-1 text-sm text-muted-foreground">
+                      {item.original_url}
+                    </p>
+                  )}
+                </div>
               </FormField>
 
               <FormField label="Notes (optional)" htmlFor="edit-notes" className="gap-[8px]">
