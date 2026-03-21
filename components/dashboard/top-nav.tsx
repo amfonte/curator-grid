@@ -97,7 +97,9 @@ export function TopNav(props: TopNavProps) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button size="icon" className="cta-icon" aria-label="User menu">
-          <UserIcon className="h-4 w-4" />
+          <span className="inline-flex">
+            <UserIcon className="h-4 w-4" />
+          </span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
