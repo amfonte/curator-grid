@@ -278,12 +278,6 @@ export function EditItemDialog({
           </div>
 
           <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-auto px-1 -mx-1">
-            {item.type === "url" && item.original_url && (
-              <p className="truncate text-sm text-muted-foreground px-1">
-                {item.original_url}
-              </p>
-            )}
-
             <div className="flex flex-col gap-6">
               <FormField label="Title (optional)" htmlFor="edit-title" className="gap-[8px]">
                 <Input
@@ -292,6 +286,11 @@ export function EditItemDialog({
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Give it a name"
                 />
+                {item.type === "url" && item.original_url && (
+                  <p className="truncate px-1 text-sm text-muted-foreground">
+                    {item.original_url}
+                  </p>
+                )}
               </FormField>
 
               <FormField label="Notes (optional)" htmlFor="edit-notes" className="gap-[8px]">

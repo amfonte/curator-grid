@@ -17,14 +17,14 @@ const SelectTrigger = React.forwardRef<
     ref={ref}
     className={cn(
       // Match pill-shaped form field styling; 2px border for dropdown trigger
-      "form-field-input flex items-center justify-between whitespace-nowrap border-[2px] [&>span]:line-clamp-1",
+      "form-field-input flex items-center justify-between whitespace-nowrap border-[2px] [&>span]:line-clamp-1 [&_[data-select-chevron]]:transition-transform [&_[data-select-chevron]]:duration-200 [&[data-state=open]_[data-select-chevron]]:rotate-180",
       className,
     )}
     {...props}
   >
     {children}
     <SelectPrimitive.Icon asChild>
-      <ChevronDown className="h-6 w-6 text-foreground" />
+      <ChevronDown data-select-chevron className="h-6 w-6 text-foreground" />
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ))
@@ -39,7 +39,7 @@ const SelectContent = React.forwardRef<
       ref={ref}
       className={cn(
         // Dropdown panel: white surface, 2px border, rounded corners; no shadow
-        "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-[24px] border-[2px] border-border bg-card text-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+        "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-[24px] border-[2px] border-border bg-card text-foreground data-[state=open]:border-transparent data-[state=open]:shadow-[0_16px_16px_0_rgba(0,0,0,0.05),0_8px_8px_0_rgba(0,0,0,0.05),0_4px_4px_0_rgba(0,0,0,0.05),0_2px_2px_0_rgba(0,0,0,0.05),0_1px_1px_0_rgba(0,0,0,0.05),0_0_0_1px_rgba(0,0,0,0.05)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
         position === "popper" &&
           "data-[side=bottom]:translate-y-1 data-[side=bottom]:mt-[4px] data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
         className,

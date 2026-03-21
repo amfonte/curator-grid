@@ -29,6 +29,8 @@ export function GridItem({
 }: GridItemProps) {
   const supabase = createClient()
   const [iframeError, setIframeError] = useState(false)
+  const [iframeLoaded, setIframeLoaded] = useState(false)
+  const [iframeLikelyBlocked, setIframeLikelyBlocked] = useState(false)
   const [faviconError, setFaviconError] = useState(false)
   const [isMobileViewport, setIsMobileViewport] = useState(false)
   // For image items without stored dimensions (legacy): measure on load so we never upscale (PRD).
@@ -37,6 +39,7 @@ export function GridItem({
   const containerRef = useRef<HTMLDivElement>(null)
   const [containerSize, setContainerSize] = useState<{ width: number; height: number } | null>(null)
   const hasMarkedBlockedRef = useRef(false)
+  const iframeRequestStartedAtRef = useRef<number | null>(null)
 
   const isLargeDensity = columns <= 2
 
@@ -62,7 +65,13 @@ export function GridItem({
     ? "h-9 w-9 shrink-0 text-foreground hover:bg-accent hover:text-accent-foreground [&_svg]:size-6"
     : "h-7 w-7 shrink-0 text-foreground hover:bg-accent hover:text-accent-foreground [&_svg]:size-4"
   const hasScreenshot = !!(item.screenshot_url || item.file_url)
-  const showIframe = !isMobileViewport && !hasScreenshot && !item.iframe_blocked && !iframeError
+  const showIframe = !hasScreenshot && !item.iframe_blocked && !iframeError && !iframeLikelyBlocked
+
+  useEffect(() => {
+    setIframeLoaded(false)
+    setIframeLikelyBlocked(false)
+    iframeRequestStartedAtRef.current = showIframe ? Date.now() : null
+  }, [item.id, item.original_url, showIframe])
 
   useEffect(() => {
     const updateViewport = () => {
@@ -290,6 +299,26 @@ export function GridItem({
     columns === 1
       ? `min(${nativeSize.width}px, calc(100vw - clamp(2rem, 12vw, 12rem)))`
       : `${nativeSize.width}px`
+  const iframePlaceholder = (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-muted p-4 text-center">
+      {faviconSrc ? (
+        <img
+          src={faviconSrc || "/placeholder.svg"}
+          alt=""
+          className="h-8 w-8 rounded"
+          loading="lazy"
+          onError={() => setFaviconError(true)}
+        />
+      ) : (
+        <Globe className="h-8 w-8 text-muted-foreground" />
+      )}
+      <div className="flex flex-col items-center gap-1">
+        <div className="max-w-full text-center text-base font-normal leading-6 text-foreground break-words">
+          {item.title || item.domain || item.original_url || "Untitled site"}
+        </div>
+      </div>
+    </div>
+  )
 
   return (
     <div
@@ -326,18 +355,6 @@ export function GridItem({
           </span>
         </div>
         <div className={cn("flex min-w-0 items-center gap-1", actionsWidthClass, actionsWidthWhenSelected)}>
-          {item.original_url && (
-            <a
-              href={item.original_url || "#"}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={cn("inline-flex items-center justify-center rounded-md", actionIconButtonClass)}
-              onClick={(e) => e.stopPropagation()}
-              aria-label="Open in new tab"
-            >
-              <ExternalLink className="h-4 w-4" strokeWidth={2} />
-            </a>
-          )}
           <Button
             variant="ghost"
             size="icon"
@@ -392,18 +409,6 @@ export function GridItem({
           </span>
         </div>
         <div className="flex w-full items-center justify-between gap-1 py-1">
-          {item.original_url && (
-            <a
-              href={item.original_url || "#"}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={cn("inline-flex items-center justify-center rounded-md", actionIconButtonClass)}
-              onClick={(e) => e.stopPropagation()}
-              aria-label="Open in new tab"
-            >
-              <ExternalLink className="h-4 w-4" strokeWidth={2} />
-            </a>
-          )}
           <Button
             variant="ghost"
             size="icon"
@@ -444,37 +449,10 @@ export function GridItem({
             className="h-full w-full object-cover"
             loading="lazy"
           />
-        ) : !showIframe ? (
-          <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-muted p-4 text-center">
-            {faviconSrc ? (
-              <img
-                src={faviconSrc || "/placeholder.svg"}
-                alt=""
-                className="h-8 w-8 rounded"
-                loading="lazy"
-                onError={() => setFaviconError(true)}
-              />
-            ) : (
-              <Globe className="h-8 w-8 text-muted-foreground" />
-            )}
-            <div className="flex flex-col items-center gap-1">
-              <div className="max-w-full truncate text-sm font-medium text-foreground">
-                {item.title || item.domain || item.original_url || "Untitled site"}
-              </div>
-              <a
-                href={item.original_url || "#"}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground link-wavy-underline"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <ExternalLink className="h-3 w-3" />
-                Open in new tab
-              </a>
-            </div>
-          </div>
+        ) : !showIframe || !iframeLoaded ? (
+          iframePlaceholder
         ) : (
-          <div className="h-full w-full bg-muted" aria-hidden="true" />
+          <div className="h-full w-full bg-background" aria-hidden="true" />
         )}
         {showIframe && (
           <div
@@ -491,6 +469,16 @@ export function GridItem({
               className="h-full w-full border-0"
               sandbox="allow-scripts allow-same-origin"
               loading="lazy"
+              onLoad={() => {
+                const startedAt = iframeRequestStartedAtRef.current
+                const elapsedMs = startedAt ? Date.now() - startedAt : Number.POSITIVE_INFINITY
+                // Heuristic: blocked/empty embeds often "load" immediately but render blank.
+                if (elapsedMs < 350) {
+                  setIframeLikelyBlocked(true)
+                  return
+                }
+                setIframeLoaded(true)
+              }}
               onError={handleIframeError}
               style={{ width: nativeSize.width, height: nativeSize.height }}
             />

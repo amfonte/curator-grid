@@ -5,7 +5,20 @@ import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
 import { cn } from "@/lib/utils"
 
 const DropdownMenu = DropdownMenuPrimitive.Root
-const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger
+const DropdownMenuTrigger = React.forwardRef<
+  React.ComponentRef<typeof DropdownMenuPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Trigger>
+>(({ className, ...props }, ref) => (
+  <DropdownMenuPrimitive.Trigger
+    ref={ref}
+    className={cn(
+      "[&>svg]:transition-transform [&>svg]:duration-200 data-[state=open]:[&>svg]:rotate-180",
+      className,
+    )}
+    {...props}
+  />
+))
+DropdownMenuTrigger.displayName = DropdownMenuPrimitive.Trigger.displayName
 
 const DropdownMenuContent = React.forwardRef<
   React.ComponentRef<typeof DropdownMenuPrimitive.Content>,
@@ -16,7 +29,7 @@ const DropdownMenuContent = React.forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        "z-50 min-w-[8rem] overflow-visible rounded-[8px] bg-popover p-2 text-[color:var(--Text-BodyPrimary,#333)] font-[family-name:var(--font-family-All,'Host Grotesk')] text-[length:var(--font-size-Base,16px)] leading-[var(--font-line-height-Base,24px)] font-[var(--font-weight-Regular,400)] shadow-[0_25px_7px_0_rgba(0,0,0,0),0_16px_6px_0_rgba(0,0,0,0),0_9px_5px_0_rgba(0,0,0,0.01),0_4px_4px_0_rgba(0,0,0,0.02),0_1px_2px_0_rgba(0,0,0,0.02)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 dropdown-popover",
+        "z-50 min-w-[8rem] overflow-visible rounded-[8px] bg-popover p-2 text-[color:var(--Text-BodyPrimary,#333)] font-[family-name:var(--font-family-All,'Host Grotesk')] text-[length:var(--font-size-Base,16px)] leading-[var(--font-line-height-Base,24px)] font-[var(--font-weight-Regular,400)] shadow-[0_21px_6px_0_rgba(0,0,0,0),0_13px_5px_0_rgba(0,0,0,0.01),0_7px_4px_0_rgba(0,0,0,0.03),0_3px_3px_0_rgba(0,0,0,0.05),0_1px_2px_0_rgba(0,0,0,0.06)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 dropdown-popover",
         className,
       )}
       {...props}
