@@ -39,6 +39,36 @@ function isPrivateOrLocalHost(hostname: string): boolean {
   return false
 }
 
+function parseFrameAncestors(cspHeader: string | null): string | null {
+  if (!cspHeader) return null
+  const directives = cspHeader
+    .split(";")
+    .map((part) => part.trim())
+    .filter(Boolean)
+  const frameAncestorsDirective = directives.find((part) => part.toLowerCase().startsWith("frame-ancestors"))
+  if (!frameAncestorsDirective) return null
+  const firstSpace = frameAncestorsDirective.indexOf(" ")
+  if (firstSpace < 0) return ""
+  return frameAncestorsDirective.slice(firstSpace + 1).trim()
+}
+
+function isLikelyIframeBlocked(res: Response): boolean {
+  const xFrameOptions = res.headers.get("x-frame-options")?.trim().toLowerCase() ?? ""
+  if (xFrameOptions.includes("deny") || xFrameOptions.includes("sameorigin")) {
+    return true
+  }
+
+  const frameAncestors = parseFrameAncestors(res.headers.get("content-security-policy"))
+  if (!frameAncestors) return false
+
+  const normalized = frameAncestors.toLowerCase()
+  if (normalized.includes("'none'") || normalized.includes("'self'")) {
+    return true
+  }
+
+  return false
+}
+
 export async function POST(request: Request) {
   try {
     const { url } = await request.json()
@@ -63,6 +93,7 @@ export async function POST(request: Request) {
     let title: string | undefined
     let description: string | undefined
     let favicon: string | undefined
+    let iframeBlocked = false
 
     try {
       const res = await fetch(parsedUrl.toString(), {
@@ -73,6 +104,7 @@ export async function POST(request: Request) {
         },
       })
       clearTimeout(timeout)
+      iframeBlocked = isLikelyIframeBlocked(res)
 
       const html = await res.text()
 
@@ -115,7 +147,7 @@ export async function POST(request: Request) {
       favicon = `${parsedUrl.origin}/favicon.ico`
     }
 
-    return NextResponse.json({ title, description, favicon, domain })
+    return NextResponse.json({ title, description, favicon, domain, iframeBlocked })
   } catch {
     return NextResponse.json({ error: "Invalid URL" }, { status: 400 })
   }

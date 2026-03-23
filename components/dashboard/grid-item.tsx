@@ -19,6 +19,8 @@ interface GridItemProps {
   onDelete: () => void
 }
 
+const IFRAME_LOAD_TIMEOUT_MS = 2500
+
 export function GridItem({
   columns,
   item,
@@ -37,10 +39,7 @@ export function GridItem({
   const containerRef = useRef<HTMLDivElement>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [containerSize, setContainerSize] = useState<{ width: number; height: number } | null>(null)
-  const iframeRequestStartedAtRef = useRef<number | null>(null)
-  const iframeRecoveryAttemptsRef = useRef(0)
-  const iframeRecoveryTimeoutRef = useRef<number | null>(null)
-  const iframeLoadConfirmTimeoutRef = useRef<number | null>(null)
+  const iframeLoadTimeoutRef = useRef<number | null>(null)
 
   const isLargeDensity = columns <= 2
 
@@ -71,29 +70,36 @@ export function GridItem({
   useEffect(() => {
     setIframeLoaded(false)
     setIframeLikelyBlocked(false)
-    iframeRequestStartedAtRef.current = showIframe ? Date.now() : null
-    iframeRecoveryAttemptsRef.current = 0
-    if (iframeRecoveryTimeoutRef.current != null) {
-      window.clearTimeout(iframeRecoveryTimeoutRef.current)
-      iframeRecoveryTimeoutRef.current = null
-    }
-    if (iframeLoadConfirmTimeoutRef.current != null) {
-      window.clearTimeout(iframeLoadConfirmTimeoutRef.current)
-      iframeLoadConfirmTimeoutRef.current = null
+    if (iframeLoadTimeoutRef.current != null) {
+      window.clearTimeout(iframeLoadTimeoutRef.current)
+      iframeLoadTimeoutRef.current = null
     }
   }, [item.id, item.original_url])
 
   useEffect(() => {
-    iframeRequestStartedAtRef.current = showIframe ? Date.now() : null
-  }, [showIframe])
+    if (!showIframe || iframeLoaded) return
+    if (iframeLoadTimeoutRef.current != null) {
+      window.clearTimeout(iframeLoadTimeoutRef.current)
+    }
+    iframeLoadTimeoutRef.current = window.setTimeout(() => {
+      // Allowed sites can still fail at runtime (network/timeouts/SSL/etc).
+      // Keep metadata placeholder when iframe doesn't become visible in time.
+      setIframeLoaded(false)
+      setIframeLikelyBlocked(true)
+      iframeLoadTimeoutRef.current = null
+    }, IFRAME_LOAD_TIMEOUT_MS)
+    return () => {
+      if (iframeLoadTimeoutRef.current != null) {
+        window.clearTimeout(iframeLoadTimeoutRef.current)
+        iframeLoadTimeoutRef.current = null
+      }
+    }
+  }, [showIframe, iframeLoaded])
 
   useEffect(() => {
     return () => {
-      if (iframeRecoveryTimeoutRef.current != null) {
-        window.clearTimeout(iframeRecoveryTimeoutRef.current)
-      }
-      if (iframeLoadConfirmTimeoutRef.current != null) {
-        window.clearTimeout(iframeLoadConfirmTimeoutRef.current)
+      if (iframeLoadTimeoutRef.current != null) {
+        window.clearTimeout(iframeLoadTimeoutRef.current)
       }
     }
   }, [])
@@ -284,23 +290,14 @@ export function GridItem({
 
   // URL type
   const faviconSrc = !faviconError ? item.favicon_url : null
-  const scheduleOneRecoveryAttempt = () => {
-    if (iframeRecoveryAttemptsRef.current >= 1) return
-    iframeRecoveryAttemptsRef.current += 1
-    setIframeLikelyBlocked(true)
-    if (iframeRecoveryTimeoutRef.current != null) {
-      window.clearTimeout(iframeRecoveryTimeoutRef.current)
-    }
-    iframeRecoveryTimeoutRef.current = window.setTimeout(() => {
-      setIframeLikelyBlocked(false)
-      iframeRecoveryTimeoutRef.current = null
-    }, 900)
-  }
 
   const handleIframeError = () => {
-    // Keep placeholder visible on transient failures and allow one quick retry.
+    if (iframeLoadTimeoutRef.current != null) {
+      window.clearTimeout(iframeLoadTimeoutRef.current)
+      iframeLoadTimeoutRef.current = null
+    }
     setIframeLoaded(false)
-    scheduleOneRecoveryAttempt()
+    setIframeLikelyBlocked(true)
   }
 
   const handleIframeLoad = () => {
@@ -319,22 +316,17 @@ export function GridItem({
       const isSameOriginBlank = href === "about:blank" && bodyHtml.length === 0
       if (isSameOriginBlank) {
         setIframeLoaded(false)
-        scheduleOneRecoveryAttempt()
+        setIframeLikelyBlocked(true)
         return
       }
     } catch {
       // Cross-origin pages throw when inspected; that's expected for valid embeds.
     }
-
-    // For cross-origin pages we cannot inspect the document reliably.
-    // Keep placeholder visible briefly, then promote iframe if no failure signal appears.
-    if (iframeLoadConfirmTimeoutRef.current != null) {
-      window.clearTimeout(iframeLoadConfirmTimeoutRef.current)
+    if (iframeLoadTimeoutRef.current != null) {
+      window.clearTimeout(iframeLoadTimeoutRef.current)
+      iframeLoadTimeoutRef.current = null
     }
-    iframeLoadConfirmTimeoutRef.current = window.setTimeout(() => {
-      setIframeLoaded(true)
-      iframeLoadConfirmTimeoutRef.current = null
-    }, 450)
+    setIframeLoaded(true)
   }
 
   const nativeSize = getViewportDimensions(item.viewport_size ?? "desktop")

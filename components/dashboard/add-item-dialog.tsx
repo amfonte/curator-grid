@@ -450,7 +450,13 @@ export function AddItemDialog({
       if (!user) throw new Error("Not authenticated")
 
       // Extract metadata via API route
-      let metadata: { title?: string; description?: string; favicon?: string; domain?: string } = {}
+      let metadata: {
+        title?: string
+        description?: string
+        favicon?: string
+        domain?: string
+        iframeBlocked?: boolean
+      } = {}
       try {
         const res = await fetch("/api/metadata", {
           method: "POST",
@@ -475,6 +481,7 @@ export function AddItemDialog({
           description: metadata.description || null,
           favicon_url: metadata.favicon || null,
           domain: metadata.domain || null,
+          iframe_blocked: metadata.iframeBlocked ?? false,
           notes: notes || null,
         })
         .select()
