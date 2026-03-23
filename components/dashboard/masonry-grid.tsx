@@ -16,10 +16,13 @@ interface MasonryGridProps {
 
 const INITIAL_RENDER_COUNT = 36
 const RENDER_CHUNK_SIZE = 24
+const INITIAL_RENDER_COUNT_MOBILE = 12
+const RENDER_CHUNK_SIZE_MOBILE = 8
 const ACTIVATION_ROOT_MARGIN_DESKTOP = "450px 0px"
 const ACTIVATION_ROOT_MARGIN_MOBILE = "220px 0px"
 const LOAD_MORE_ROOT_MARGIN_DESKTOP = "700px 0px"
 const LOAD_MORE_ROOT_MARGIN_MOBILE = "320px 0px"
+const MOBILE_BREAKPOINT_PX = 767
 
 function GridItemPlaceholder({
   item,
@@ -81,17 +84,28 @@ function LazyGridCell({
 }) {
   const [isNearViewport, setIsNearViewport] = useState(false)
   const [hasActivated, setHasActivated] = useState(false)
+  const [isMobileViewport, setIsMobileViewport] = useState(
+    () => typeof window !== "undefined" && window.innerWidth <= MOBILE_BREAKPOINT_PX,
+  )
   const itemRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    const updateIsMobileViewport = () => {
+      setIsMobileViewport(window.innerWidth <= MOBILE_BREAKPOINT_PX)
+    }
+    updateIsMobileViewport()
+    window.addEventListener("resize", updateIsMobileViewport)
+    return () => window.removeEventListener("resize", updateIsMobileViewport)
+  }, [])
 
   useEffect(() => {
     const element = itemRef.current
     if (!element) return
     if (typeof IntersectionObserver === "undefined") {
       setIsNearViewport(true)
-      setHasActivated(true)
       return
     }
-    const isMobileViewport = typeof window !== "undefined" && window.innerWidth <= 767
+    const isMobileViewport = typeof window !== "undefined" && window.innerWidth <= MOBILE_BREAKPOINT_PX
     const activationRootMargin = isMobileViewport ? ACTIVATION_ROOT_MARGIN_MOBILE : ACTIVATION_ROOT_MARGIN_DESKTOP
     const observer = new IntersectionObserver(
       (entries) => {
@@ -110,7 +124,7 @@ function LazyGridCell({
     return () => observer.disconnect()
   }, [])
 
-  const shouldRenderActiveCard = hasActivated || isNearViewport
+  const shouldRenderActiveCard = isMobileViewport ? isNearViewport : hasActivated || isNearViewport
 
   return (
     <div ref={itemRef}>
@@ -138,15 +152,32 @@ export function MasonryGrid({
   onEditItem,
   onDeleteItem,
 }: MasonryGridProps) {
-  const [renderCount, setRenderCount] = useState(INITIAL_RENDER_COUNT)
+  const getInitialIsMobile = () =>
+    typeof window !== "undefined" && window.innerWidth <= MOBILE_BREAKPOINT_PX
+
+  const [isMobileViewport, setIsMobileViewport] = useState(getInitialIsMobile)
+  const initialRenderCount = isMobileViewport ? INITIAL_RENDER_COUNT_MOBILE : INITIAL_RENDER_COUNT
+  const renderChunkSize = isMobileViewport ? RENDER_CHUNK_SIZE_MOBILE : RENDER_CHUNK_SIZE
+  const [renderCount, setRenderCount] = useState(initialRenderCount)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
+    const updateIsMobileViewport = () => {
+      setIsMobileViewport(window.innerWidth <= MOBILE_BREAKPOINT_PX)
+    }
+
+    updateIsMobileViewport()
+    window.addEventListener("resize", updateIsMobileViewport)
+    return () => window.removeEventListener("resize", updateIsMobileViewport)
+  }, [])
+
+  useEffect(() => {
     setRenderCount((current) => {
-      const minRequired = Math.min(INITIAL_RENDER_COUNT, items.length)
-      return current < minRequired ? minRequired : current
+      const minRequired = Math.min(initialRenderCount, items.length)
+      // If breakpoint changed, cap excess rendered cards to keep mobile memory lighter.
+      return Math.min(Math.max(current, minRequired), items.length)
     })
-  }, [items.length])
+  }, [initialRenderCount, items.length])
 
   useEffect(() => {
     const element = loadMoreRef.current
@@ -155,19 +186,18 @@ export function MasonryGrid({
       setRenderCount(items.length)
       return
     }
-    const isMobileViewport = typeof window !== "undefined" && window.innerWidth <= 767
     const loadMoreRootMargin = isMobileViewport ? LOAD_MORE_ROOT_MARGIN_MOBILE : LOAD_MORE_ROOT_MARGIN_DESKTOP
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0]
         if (!entry?.isIntersecting) return
-        setRenderCount((current) => Math.min(current + RENDER_CHUNK_SIZE, items.length))
+        setRenderCount((current) => Math.min(current + renderChunkSize, items.length))
       },
       { rootMargin: loadMoreRootMargin },
     )
     observer.observe(element)
     return () => observer.disconnect()
-  }, [items.length])
+  }, [isMobileViewport, items.length, renderChunkSize])
 
   const visibleItems = items.slice(0, Math.min(renderCount, items.length))
   const safeColumns = Math.max(columns, 1)
