@@ -40,6 +40,7 @@ export function GridItem({
   const iframeRequestStartedAtRef = useRef<number | null>(null)
   const iframeRecoveryAttemptsRef = useRef(0)
   const iframeRecoveryTimeoutRef = useRef<number | null>(null)
+  const iframeLoadConfirmTimeoutRef = useRef<number | null>(null)
 
   const isLargeDensity = columns <= 2
 
@@ -76,6 +77,10 @@ export function GridItem({
       window.clearTimeout(iframeRecoveryTimeoutRef.current)
       iframeRecoveryTimeoutRef.current = null
     }
+    if (iframeLoadConfirmTimeoutRef.current != null) {
+      window.clearTimeout(iframeLoadConfirmTimeoutRef.current)
+      iframeLoadConfirmTimeoutRef.current = null
+    }
   }, [item.id, item.original_url])
 
   useEffect(() => {
@@ -86,6 +91,9 @@ export function GridItem({
     return () => {
       if (iframeRecoveryTimeoutRef.current != null) {
         window.clearTimeout(iframeRecoveryTimeoutRef.current)
+      }
+      if (iframeLoadConfirmTimeoutRef.current != null) {
+        window.clearTimeout(iframeLoadConfirmTimeoutRef.current)
       }
     }
   }, [])
@@ -318,7 +326,15 @@ export function GridItem({
       // Cross-origin pages throw when inspected; that's expected for valid embeds.
     }
 
-    setIframeLoaded(true)
+    // For cross-origin pages we cannot inspect the document reliably.
+    // Keep placeholder visible briefly, then promote iframe if no failure signal appears.
+    if (iframeLoadConfirmTimeoutRef.current != null) {
+      window.clearTimeout(iframeLoadConfirmTimeoutRef.current)
+    }
+    iframeLoadConfirmTimeoutRef.current = window.setTimeout(() => {
+      setIframeLoaded(true)
+      iframeLoadConfirmTimeoutRef.current = null
+    }, 450)
   }
 
   const nativeSize = getViewportDimensions(item.viewport_size ?? "desktop")
@@ -513,7 +529,7 @@ export function GridItem({
           <div
             className={cn(
               "absolute left-0 top-0 origin-top-left transition-opacity duration-150",
-              iframeLoaded ? "opacity-100" : "opacity-0",
+              iframeLoaded ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
             )}
             style={{
               width: nativeSize.width,
