@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import Masonry from "react-masonry-css"
 import type { Item } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { GridItem } from "@/components/dashboard/grid-item"
@@ -171,26 +170,37 @@ export function MasonryGrid({
   }, [items.length])
 
   const visibleItems = items.slice(0, Math.min(renderCount, items.length))
+  const safeColumns = Math.max(columns, 1)
+  const itemsByColumn: typeof visibleItems[] = Array.from({ length: safeColumns }, () => [])
+  // Strict chronological ordering across columns: left-to-right, top-to-bottom.
+  visibleItems.forEach((item, index) => {
+    const columnIndex = index % safeColumns
+    itemsByColumn[columnIndex]?.push(item)
+  })
 
   return (
     <>
-      <Masonry
-        breakpointCols={columns}
-        className={`masonry-grid masonry-grid--cols-${columns}`}
-        columnClassName="masonry-grid-column"
-      >
-        {visibleItems.map((item) => (
-          <LazyGridCell
-            key={item.id}
-            columns={columns}
-            item={item}
-            selected={selectedIds.has(item.id)}
-            onToggleSelect={() => onToggleSelect(item.id)}
-            onEdit={() => onEditItem(item)}
-            onDelete={() => onDeleteItem(item.id)}
-          />
+      <div className={`masonry-grid masonry-grid--cols-${columns}`}>
+        {itemsByColumn.map((columnItems, columnIndex) => (
+          <div
+            key={columnIndex}
+            className="masonry-grid-column"
+            style={{ width: `${100 / safeColumns}%` }}
+          >
+            {columnItems.map((item) => (
+              <LazyGridCell
+                key={item.id}
+                columns={columns}
+                item={item}
+                selected={selectedIds.has(item.id)}
+                onToggleSelect={() => onToggleSelect(item.id)}
+                onEdit={() => onEditItem(item)}
+                onDelete={() => onDeleteItem(item.id)}
+              />
+            ))}
+          </div>
         ))}
-      </Masonry>
+      </div>
       {visibleItems.length < items.length && <div ref={loadMoreRef} className="h-4 w-full" aria-hidden="true" />}
     </>
   )

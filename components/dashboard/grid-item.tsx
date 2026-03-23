@@ -7,7 +7,7 @@ import { cn, getViewportDimensions } from "@/lib/utils"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogOverlay, DialogPortal } from "@/components/ui/dialog"
-import { Pencil, Trash2, Globe, Maximize2, X } from "lucide-react"
+import { Pencil, Trash2, Globe, Maximize2, ExternalLink, X } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
 interface GridItemProps {
@@ -28,7 +28,6 @@ export function GridItem({
   onDelete,
 }: GridItemProps) {
   const supabase = createClient()
-  const [iframeError, setIframeError] = useState(false)
   const [iframeLoaded, setIframeLoaded] = useState(false)
   const [iframeLikelyBlocked, setIframeLikelyBlocked] = useState(false)
   const [faviconError, setFaviconError] = useState(false)
@@ -36,9 +35,11 @@ export function GridItem({
   const [measuredImageSize, setMeasuredImageSize] = useState<{ width: number; height: number } | null>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const iframeRef = useRef<HTMLIFrameElement>(null)
   const [containerSize, setContainerSize] = useState<{ width: number; height: number } | null>(null)
-  const hasMarkedBlockedRef = useRef(false)
   const iframeRequestStartedAtRef = useRef<number | null>(null)
+  const iframeRecoveryAttemptsRef = useRef(0)
+  const iframeRecoveryTimeoutRef = useRef<number | null>(null)
 
   const isLargeDensity = columns <= 2
 
@@ -64,13 +65,30 @@ export function GridItem({
     ? "h-9 w-9 shrink-0 text-foreground hover:bg-accent hover:text-accent-foreground [&_svg]:size-6"
     : "h-7 w-7 shrink-0 text-foreground hover:bg-accent hover:text-accent-foreground [&_svg]:size-4"
   const hasScreenshot = !!(item.screenshot_url || item.file_url)
-  const showIframe = !hasScreenshot && !item.iframe_blocked && !iframeError && !iframeLikelyBlocked
+  const showIframe = !hasScreenshot && !item.iframe_blocked && !iframeLikelyBlocked
 
   useEffect(() => {
     setIframeLoaded(false)
     setIframeLikelyBlocked(false)
     iframeRequestStartedAtRef.current = showIframe ? Date.now() : null
-  }, [item.id, item.original_url, showIframe])
+    iframeRecoveryAttemptsRef.current = 0
+    if (iframeRecoveryTimeoutRef.current != null) {
+      window.clearTimeout(iframeRecoveryTimeoutRef.current)
+      iframeRecoveryTimeoutRef.current = null
+    }
+  }, [item.id, item.original_url])
+
+  useEffect(() => {
+    iframeRequestStartedAtRef.current = showIframe ? Date.now() : null
+  }, [showIframe])
+
+  useEffect(() => {
+    return () => {
+      if (iframeRecoveryTimeoutRef.current != null) {
+        window.clearTimeout(iframeRecoveryTimeoutRef.current)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     if (!showIframe || !containerRef.current) return
@@ -258,25 +276,56 @@ export function GridItem({
 
   // URL type
   const faviconSrc = !faviconError ? item.favicon_url : null
-  const handleIframeError = async () => {
-    setIframeError(true)
-    if (hasMarkedBlockedRef.current || item.iframe_blocked) return
-    hasMarkedBlockedRef.current = true
-  try {
-    const { error } = await supabase
-      .from("items")
-      .update({ iframe_blocked: true, updated_at: new Date().toISOString() })
-      .eq("id", item.id)
-
-    if (error) {
-      console.error("Failed to mark iframe as blocked:", error)
+  const scheduleOneRecoveryAttempt = () => {
+    if (iframeRecoveryAttemptsRef.current >= 1) return
+    iframeRecoveryAttemptsRef.current += 1
+    setIframeLikelyBlocked(true)
+    if (iframeRecoveryTimeoutRef.current != null) {
+      window.clearTimeout(iframeRecoveryTimeoutRef.current)
     }
-  } catch (err: unknown) {
-    console.error("Failed to mark iframe as blocked:", err)
+    iframeRecoveryTimeoutRef.current = window.setTimeout(() => {
+      setIframeLikelyBlocked(false)
+      iframeRecoveryTimeoutRef.current = null
+    }, 900)
   }
+
+  const handleIframeError = () => {
+    // Keep placeholder visible on transient failures and allow one quick retry.
+    setIframeLoaded(false)
+    scheduleOneRecoveryAttempt()
+  }
+
+  const handleIframeLoad = () => {
+    const iframeEl = iframeRef.current
+    if (!iframeEl) {
+      setIframeLoaded(true)
+      return
+    }
+
+    // Some blocked embeds still trigger onLoad with an about:blank/error document.
+    // Detect same-origin blank docs and keep fallback placeholder in that case.
+    try {
+      const href = iframeEl.contentWindow?.location?.href ?? ""
+      const body = iframeEl.contentDocument?.body
+      const bodyHtml = body?.innerHTML?.trim() ?? ""
+      const isSameOriginBlank = href === "about:blank" && bodyHtml.length === 0
+      if (isSameOriginBlank) {
+        setIframeLoaded(false)
+        scheduleOneRecoveryAttempt()
+        return
+      }
+    } catch {
+      // Cross-origin pages throw when inspected; that's expected for valid embeds.
+    }
+
+    setIframeLoaded(true)
   }
 
   const nativeSize = getViewportDimensions(item.viewport_size ?? "desktop")
+  const openInNewTab = () => {
+    if (!item.original_url) return
+    window.open(item.original_url, "_blank", "noopener,noreferrer")
+  }
   // PRD: never upscale past imported viewport size (1440, 768, or 375px); downscale only
   const scale =
     containerSize && containerSize.width > 0 && containerSize.height > 0
@@ -363,6 +412,15 @@ export function GridItem({
           >
             <Trash2 className="h-4 w-4" strokeWidth={2} />
           </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={actionIconButtonClass}
+            onClick={openInNewTab}
+            aria-label="Open in new tab"
+          >
+            <ExternalLink className="h-4 w-4" strokeWidth={2} />
+          </Button>
           <Checkbox
             checked={selected}
             onCheckedChange={onToggleSelect}
@@ -417,6 +475,15 @@ export function GridItem({
           >
             <Trash2 className="h-4 w-4" strokeWidth={2} />
           </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={actionIconButtonClass}
+            onClick={openInNewTab}
+            aria-label="Open in new tab"
+          >
+            <ExternalLink className="h-4 w-4" strokeWidth={2} />
+          </Button>
           <Checkbox
             checked={selected}
             onCheckedChange={onToggleSelect}
@@ -439,14 +506,15 @@ export function GridItem({
             className="h-full w-full object-cover"
             loading="lazy"
           />
-        ) : !showIframe || !iframeLoaded ? (
-          iframePlaceholder
         ) : (
-          <div className="h-full w-full bg-background" aria-hidden="true" />
+          iframePlaceholder
         )}
         {showIframe && (
           <div
-            className="absolute left-0 top-0 origin-top-left"
+            className={cn(
+              "absolute left-0 top-0 origin-top-left transition-opacity duration-150",
+              iframeLoaded ? "opacity-100" : "opacity-0",
+            )}
             style={{
               width: nativeSize.width,
               height: nativeSize.height,
@@ -454,21 +522,13 @@ export function GridItem({
             }}
           >
             <iframe
+              ref={iframeRef}
               src={item.original_url || ""}
               title={item.title || item.original_url || "Website preview"}
               className="h-full w-full border-0"
               sandbox="allow-scripts allow-same-origin"
               loading="lazy"
-              onLoad={() => {
-                const startedAt = iframeRequestStartedAtRef.current
-                const elapsedMs = startedAt ? Date.now() - startedAt : Number.POSITIVE_INFINITY
-                // Heuristic: blocked/empty embeds often "load" immediately but render blank.
-                if (elapsedMs < 350) {
-                  setIframeLikelyBlocked(true)
-                  return
-                }
-                setIframeLoaded(true)
-              }}
+              onLoad={handleIframeLoad}
               onError={handleIframeError}
               style={{ width: nativeSize.width, height: nativeSize.height }}
             />
