@@ -40,6 +40,9 @@ export function GridItem({
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [containerSize, setContainerSize] = useState<{ width: number; height: number } | null>(null)
   const iframeLoadTimeoutRef = useRef<number | null>(null)
+  const iframePolicyCheckedRef = useRef(false)
+  const iframePolicyBlockedRef = useRef(false)
+  const iframePolicyRequestRef = useRef<Promise<boolean> | null>(null)
 
   const isLargeDensity = columns <= 2
 
@@ -65,11 +68,14 @@ export function GridItem({
     ? "h-9 w-9 shrink-0 text-foreground hover:bg-accent hover:text-accent-foreground [&_svg]:size-6"
     : "h-7 w-7 shrink-0 text-foreground hover:bg-accent hover:text-accent-foreground [&_svg]:size-4"
   const hasScreenshot = !!(item.screenshot_url || item.file_url)
-  const showIframe = !hasScreenshot && !item.iframe_blocked && !iframeLikelyBlocked
+  const showIframe = !hasScreenshot && !item.iframe_blocked && !iframePolicyBlockedRef.current && !iframeLikelyBlocked
 
   useEffect(() => {
     setIframeLoaded(false)
     setIframeLikelyBlocked(false)
+    iframePolicyCheckedRef.current = false
+    iframePolicyBlockedRef.current = false
+    iframePolicyRequestRef.current = null
     if (iframeLoadTimeoutRef.current != null) {
       window.clearTimeout(iframeLoadTimeoutRef.current)
       iframeLoadTimeoutRef.current = null
@@ -291,6 +297,40 @@ export function GridItem({
   // URL type
   const faviconSrc = !faviconError ? item.favicon_url : null
 
+  const checkIframePolicy = async (): Promise<boolean> => {
+    if (!item.original_url) return false
+    if (iframePolicyCheckedRef.current) return iframePolicyBlockedRef.current
+    if (iframePolicyRequestRef.current) return iframePolicyRequestRef.current
+
+    iframePolicyRequestRef.current = (async () => {
+      try {
+        const res = await fetch("/api/metadata", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: item.original_url }),
+        })
+        if (!res.ok) return false
+        const metadata = (await res.json()) as { iframeBlocked?: boolean }
+        const blocked = Boolean(metadata.iframeBlocked)
+        iframePolicyCheckedRef.current = true
+        iframePolicyBlockedRef.current = blocked
+        if (blocked) {
+          void supabase
+            .from("items")
+            .update({ iframe_blocked: true, updated_at: new Date().toISOString() })
+            .eq("id", item.id)
+        }
+        return blocked
+      } catch {
+        return false
+      } finally {
+        iframePolicyRequestRef.current = null
+      }
+    })()
+
+    return iframePolicyRequestRef.current
+  }
+
   const handleIframeError = () => {
     if (iframeLoadTimeoutRef.current != null) {
       window.clearTimeout(iframeLoadTimeoutRef.current)
@@ -322,11 +362,24 @@ export function GridItem({
     } catch {
       // Cross-origin pages throw when inspected; that's expected for valid embeds.
     }
-    if (iframeLoadTimeoutRef.current != null) {
-      window.clearTimeout(iframeLoadTimeoutRef.current)
-      iframeLoadTimeoutRef.current = null
-    }
-    setIframeLoaded(true)
+    void (async () => {
+      const blocked = await checkIframePolicy()
+      if (blocked) {
+        if (iframeLoadTimeoutRef.current != null) {
+          window.clearTimeout(iframeLoadTimeoutRef.current)
+          iframeLoadTimeoutRef.current = null
+        }
+        setIframeLoaded(false)
+        setIframeLikelyBlocked(true)
+        return
+      }
+
+      if (iframeLoadTimeoutRef.current != null) {
+        window.clearTimeout(iframeLoadTimeoutRef.current)
+        iframeLoadTimeoutRef.current = null
+      }
+      setIframeLoaded(true)
+    })()
   }
 
   const nativeSize = getViewportDimensions(item.viewport_size ?? "desktop")
