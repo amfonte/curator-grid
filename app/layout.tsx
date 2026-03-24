@@ -10,7 +10,12 @@ const hostGrotesk = Host_Grotesk({
   variable: "--font-host-grotesk",
 })
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: 'Curator - Your Inspiration Board',
   description: 'A personal workspace for collecting and organizing design inspiration. Save URLs, upload images, and curate your creative references.',
 }
