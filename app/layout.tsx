@@ -14,34 +14,38 @@ const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ||
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
 
+const metadataBase = new URL(siteUrl)
+// Explicit absolute URL — X/Twitter’s crawler is picky; avoids any ambiguity vs relative paths
+const ogImageUrl = new URL("/og-image.png", metadataBase).toString()
+
 const title = "Curator - Your Inspiration Board"
 const description =
   "A personal workspace for collecting and organizing design inspiration. Save URLs, upload images, and curate your creative references."
 
+const ogImage = {
+  url: ogImageUrl,
+  width: 1200,
+  height: 630,
+  alt: title,
+}
+
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase,
   title,
   description,
-  // Static /public URL (no ?hash) — some scrapers ignore Next.js opengraph-image query strings
+  // Use /public/og-image.png only; app/opengraph-image.* adds duplicate og tags and query-string URLs
   openGraph: {
     title,
     description,
     siteName: "Curator",
     type: "website",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: title,
-      },
-    ],
+    images: [ogImage],
   },
   twitter: {
     card: "summary_large_image",
     title,
     description,
-    images: ["/og-image.png"],
+    images: [ogImage],
   },
 }
 
