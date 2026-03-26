@@ -19,7 +19,28 @@ interface GridItemProps {
   onDelete: () => void
 }
 
-const IFRAME_LOAD_TIMEOUT_MS = 2500
+// Many sites are slow/cold-start; keep this long enough to reduce "false blocked" fallbacks.
+const IFRAME_LOAD_TIMEOUT_MS = 6000
+const IFRAME_RETRY_DELAY_MS = 500
+
+type UrlEmbedState = {
+  policyBlocked: boolean
+  hasSuccessfulLoad: boolean
+}
+
+type IframeDebugStatus =
+  | "idle"
+  | "loading"
+  | "retrying"
+  | "loaded"
+  | "policy-blocked"
+  | "timed-out"
+  | "errored"
+
+// Session-scoped cache so navigating away/back does not re-learn the same URL behavior.
+const urlEmbedStateCache = new Map<string, UrlEmbedState>()
+const iframePolicyResultCache = new Map<string, boolean>()
+const iframePolicyPromiseCache = new Map<string, Promise<boolean>>()
 
 export function GridItem({
   columns,
@@ -43,6 +64,10 @@ export function GridItem({
   const iframePolicyCheckedRef = useRef(false)
   const iframePolicyBlockedRef = useRef(false)
   const iframePolicyRequestRef = useRef<Promise<boolean> | null>(null)
+  const [iframeInstanceKey, setIframeInstanceKey] = useState(0)
+  const hasRetriedRef = useRef(false)
+  const [iframeDebugStatus, setIframeDebugStatus] = useState<IframeDebugStatus>("idle")
+  const isDev = process.env.NODE_ENV === "development"
 
   const isLargeDensity = columns <= 2
 
@@ -71,11 +96,16 @@ export function GridItem({
   const showIframe = !hasScreenshot && !item.iframe_blocked && !iframePolicyBlockedRef.current && !iframeLikelyBlocked
 
   useEffect(() => {
+    const cacheKey = item.original_url || ""
+    const cached = cacheKey ? urlEmbedStateCache.get(cacheKey) : undefined
     setIframeLoaded(false)
-    setIframeLikelyBlocked(false)
+    setIframeLikelyBlocked(Boolean(item.iframe_blocked || cached?.policyBlocked))
     iframePolicyCheckedRef.current = false
-    iframePolicyBlockedRef.current = false
+    iframePolicyBlockedRef.current = Boolean(item.iframe_blocked || cached?.policyBlocked)
     iframePolicyRequestRef.current = null
+    hasRetriedRef.current = false
+    setIframeInstanceKey(0)
+    setIframeDebugStatus(item.iframe_blocked || cached?.policyBlocked ? "policy-blocked" : "idle")
     if (iframeLoadTimeoutRef.current != null) {
       window.clearTimeout(iframeLoadTimeoutRef.current)
       iframeLoadTimeoutRef.current = null
@@ -84,15 +114,14 @@ export function GridItem({
 
   useEffect(() => {
     if (!showIframe || iframeLoaded) return
+    setIframeDebugStatus((curr) => (curr === "retrying" ? curr : "loading"))
     if (iframeLoadTimeoutRef.current != null) {
       window.clearTimeout(iframeLoadTimeoutRef.current)
     }
     iframeLoadTimeoutRef.current = window.setTimeout(() => {
       // Allowed sites can still fail at runtime (network/timeouts/SSL/etc).
       // Keep metadata placeholder when iframe doesn't become visible in time.
-      setIframeLoaded(false)
-      setIframeLikelyBlocked(true)
-      iframeLoadTimeoutRef.current = null
+      markIframeFailedWithRetry("timed-out")
     }, IFRAME_LOAD_TIMEOUT_MS)
     return () => {
       if (iframeLoadTimeoutRef.current != null) {
@@ -298,20 +327,37 @@ export function GridItem({
   const faviconSrc = !faviconError ? item.favicon_url : null
 
   const checkIframePolicy = async (): Promise<boolean> => {
-    if (!item.original_url) return false
+    const url = item.original_url
+    if (!url) return false
+    const cachedResult = iframePolicyResultCache.get(url)
+    if (typeof cachedResult === "boolean") {
+      iframePolicyCheckedRef.current = true
+      iframePolicyBlockedRef.current = cachedResult
+      return cachedResult
+    }
     if (iframePolicyCheckedRef.current) return iframePolicyBlockedRef.current
     if (iframePolicyRequestRef.current) return iframePolicyRequestRef.current
+    const sharedPromise = iframePolicyPromiseCache.get(url)
+    if (sharedPromise) {
+      iframePolicyRequestRef.current = sharedPromise
+      return sharedPromise
+    }
 
     iframePolicyRequestRef.current = (async () => {
       try {
         const res = await fetch("/api/metadata", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: item.original_url }),
+          body: JSON.stringify({ url }),
         })
         if (!res.ok) return false
         const metadata = (await res.json()) as { iframeBlocked?: boolean }
         const blocked = Boolean(metadata.iframeBlocked)
+        iframePolicyResultCache.set(url, blocked)
+        urlEmbedStateCache.set(url, {
+          policyBlocked: blocked,
+          hasSuccessfulLoad: !blocked,
+        })
         iframePolicyCheckedRef.current = true
         iframePolicyBlockedRef.current = blocked
         if (blocked) {
@@ -324,20 +370,34 @@ export function GridItem({
       } catch {
         return false
       } finally {
+        iframePolicyPromiseCache.delete(url)
         iframePolicyRequestRef.current = null
       }
     })()
+    iframePolicyPromiseCache.set(url, iframePolicyRequestRef.current)
 
     return iframePolicyRequestRef.current
   }
 
-  const handleIframeError = () => {
+  const markIframeFailedWithRetry = (reason: "timed-out" | "errored") => {
     if (iframeLoadTimeoutRef.current != null) {
       window.clearTimeout(iframeLoadTimeoutRef.current)
       iframeLoadTimeoutRef.current = null
     }
+    // Avoid permanent false negatives from transient DNS/TLS/network hiccups.
+    if (!hasRetriedRef.current) {
+      hasRetriedRef.current = true
+      setIframeDebugStatus("retrying")
+      window.setTimeout(() => setIframeInstanceKey((k) => k + 1), IFRAME_RETRY_DELAY_MS)
+      return
+    }
     setIframeLoaded(false)
     setIframeLikelyBlocked(true)
+    setIframeDebugStatus(reason)
+  }
+
+  const handleIframeError = () => {
+    markIframeFailedWithRetry("errored")
   }
 
   const handleIframeLoad = () => {
@@ -355,8 +415,7 @@ export function GridItem({
       const bodyHtml = body?.innerHTML?.trim() ?? ""
       const isSameOriginBlank = href === "about:blank" && bodyHtml.length === 0
       if (isSameOriginBlank) {
-        setIframeLoaded(false)
-        setIframeLikelyBlocked(true)
+        markIframeFailedWithRetry("errored")
         return
       }
     } catch {
@@ -371,6 +430,13 @@ export function GridItem({
         }
         setIframeLoaded(false)
         setIframeLikelyBlocked(true)
+        setIframeDebugStatus("policy-blocked")
+        if (item.original_url) {
+          urlEmbedStateCache.set(item.original_url, {
+            policyBlocked: true,
+            hasSuccessfulLoad: false,
+          })
+        }
         return
       }
 
@@ -379,6 +445,14 @@ export function GridItem({
         iframeLoadTimeoutRef.current = null
       }
       setIframeLoaded(true)
+      setIframeLikelyBlocked(false)
+      setIframeDebugStatus("loaded")
+      if (item.original_url) {
+        urlEmbedStateCache.set(item.original_url, {
+          policyBlocked: false,
+          hasSuccessfulLoad: true,
+        })
+      }
     })()
   }
 
@@ -453,6 +527,11 @@ export function GridItem({
           >
             {item.title || item.domain || item.original_url || "Untitled"}
           </span>
+          {isDev && (
+            <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] leading-4 text-muted-foreground">
+              {iframeDebugStatus}
+            </span>
+          )}
         </div>
         <div className={cn("flex min-w-0 items-center gap-1", actionsWidthClass, actionsWidthWhenSelected)}>
           <Button
@@ -516,6 +595,11 @@ export function GridItem({
           <span className={cn("min-w-0 truncate font-medium text-foreground", isLargeDensity ? "text-base leading-6" : "text-sm")}>
             {item.title || item.domain || item.original_url || "Untitled"}
           </span>
+          {isDev && (
+            <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] leading-4 text-muted-foreground">
+              {iframeDebugStatus}
+            </span>
+          )}
         </div>
         <div className="flex w-full items-center justify-between gap-1 py-1">
           <Button
@@ -583,6 +667,7 @@ export function GridItem({
             }}
           >
             <iframe
+              key={`${item.id}-${iframeInstanceKey}`}
               ref={iframeRef}
               src={item.original_url || ""}
               title={item.title || item.original_url || "Website preview"}
