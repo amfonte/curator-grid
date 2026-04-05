@@ -18,10 +18,12 @@ const INITIAL_RENDER_COUNT = 36
 const RENDER_CHUNK_SIZE = 24
 const INITIAL_RENDER_COUNT_MOBILE = 12
 const RENDER_CHUNK_SIZE_MOBILE = 8
-const ACTIVATION_ROOT_MARGIN_DESKTOP = "450px 0px"
-const ACTIVATION_ROOT_MARGIN_MOBILE = "220px 0px"
-const LOAD_MORE_ROOT_MARGIN_DESKTOP = "700px 0px"
-const LOAD_MORE_ROOT_MARGIN_MOBILE = "320px 0px"
+// Keep margins small: large values pre-mount iframes far below the fold; some embeds then
+// scroll the parent window even though the user has not scrolled to that tile yet.
+const ACTIVATION_ROOT_MARGIN_DESKTOP = "32px 0px"
+const ACTIVATION_ROOT_MARGIN_MOBILE = "48px 0px"
+const LOAD_MORE_ROOT_MARGIN_DESKTOP = "400px 0px"
+const LOAD_MORE_ROOT_MARGIN_MOBILE = "240px 0px"
 const MOBILE_BREAKPOINT_PX = 767
 
 function GridItemPlaceholder({

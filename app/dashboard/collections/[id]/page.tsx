@@ -26,6 +26,11 @@ export default async function CollectionPage({ params }: PageProps) {
     <DashboardShell
       user={user}
       boardName={board.name}
+      initialGridColumns={
+        typeof board.grid_columns === "number" && Number.isFinite(board.grid_columns)
+          ? board.grid_columns
+          : undefined
+      }
       initialBoards={(boards ?? []).map((b) => ({
         ...b,
         item_count: b.item_boards?.[0]?.count ?? 0,

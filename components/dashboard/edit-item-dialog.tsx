@@ -277,8 +277,8 @@ export function EditItemDialog({
             </DialogPrimitive.Close>
           </div>
 
-          <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-auto px-1 -mx-1">
-            <div className="flex flex-col gap-6">
+          <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-5 overflow-auto px-1 -mx-1">
+            <div className="flex w-full min-w-0 flex-col gap-5">
               <FormField label="Title (optional)" htmlFor="edit-title" className="gap-[8px]">
                 <div className="flex flex-col gap-2">
                   <Input

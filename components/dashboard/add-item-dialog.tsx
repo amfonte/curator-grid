@@ -605,7 +605,7 @@ export function AddItemDialog({
           <Tabs
             value={activeTab}
             onValueChange={(v) => setActiveTab(v as "url" | "image")}
-            className="flex min-h-0 flex-1 flex-col gap-8"
+            className="flex min-h-0 w-full flex-1 flex-col gap-8"
           >
             {!inImageSaveStage && (
               <TabsList
@@ -633,9 +633,9 @@ export function AddItemDialog({
               </TabsList>
             )}
 
-            {/* Form fields: gap-6 (24px) between groups; px-1 gives focus ring room so it isn't clipped */}
-            <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-auto px-1 -mx-1">
-              <TabsContent value="url" className="m-0 flex flex-col gap-6">
+            {/* Form fields: gap-5 (20px) between groups; px-1 gives focus ring room so it isn't clipped */}
+            <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-5 overflow-auto px-1 -mx-1">
+              <TabsContent value="url" className="m-0 flex w-full min-w-0 flex-col gap-5">
                 <FormField label="Website link" htmlFor="url" className="gap-[8px]">
                   <Input
                     id="url"
@@ -662,7 +662,7 @@ export function AddItemDialog({
               <TabsContent
                 value="image"
                 className={cn(
-                  "m-0 flex min-h-0 flex-col gap-6",
+                  "m-0 flex min-h-0 w-full min-w-0 flex-col gap-5",
                   !inImageSaveStage && "flex-1",
                   inImageSaveStage && "rounded-[24px] bg-[var(--Surface-Primary,#F5F5F5)]",
                 )}
@@ -826,9 +826,9 @@ export function AddItemDialog({
                 )}
               </TabsContent>
 
-              {/* Common fields — same 24px gap */}
+              {/* Common fields — same 20px gap */}
               {(activeTab === "url" || (activeTab === "image" && currentFile)) && (
-                <div className="flex flex-col gap-6">
+                <div className="flex w-full min-w-0 flex-col gap-5">
                   <FormField label="Title (optional)" htmlFor="title" className="gap-[8px]">
                     <Input
                       id="title"

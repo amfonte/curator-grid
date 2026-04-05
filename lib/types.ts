@@ -27,6 +27,8 @@ export interface Board {
   id: string
   user_id: string
   name: string
+  /** Masonry columns (1–6); default 6 when missing (legacy rows). */
+  grid_columns?: number | null
   created_at: string
   updated_at: string
   item_count?: number

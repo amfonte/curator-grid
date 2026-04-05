@@ -188,6 +188,9 @@ export function SizeSlider({
                         className="pointer-events-auto min-w-0 cursor-pointer touch-manipulation"
                         style={{ width: TRACK_STEP_ZONE_PX }}
                         onPointerDown={(e) => {
+                          // Keep focus on the page instead of these buttons. They're inside a fixed
+                          // bar; focusing them triggers scroll-into-view and jumps the document.
+                          e.preventDefault()
                           if (stepValue === value) {
                             e.stopPropagation()
                             return

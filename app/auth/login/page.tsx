@@ -44,7 +44,7 @@ export default function LoginPage() {
         <div className="flex flex-col gap-5 items-center w-full">
           <p className="text-base text-center text-foreground">Sign in to your inspiration board</p>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5 w-full">
             {error && (
               <div className="p-3 bg-destructive/10 text-destructive rounded-md text-sm">{error}</div>
             )}
@@ -60,16 +60,26 @@ export default function LoginPage() {
               />
             </FormField>
 
-            <FormField label="Password" htmlFor="password">
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="Your password"
-                required
-                autoComplete="current-password"
-              />
-            </FormField>
+            <div className="flex flex-col gap-2 w-full">
+              <FormField label="Password" htmlFor="password">
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="Your password"
+                  required
+                  autoComplete="current-password"
+                />
+              </FormField>
+              <div className="flex justify-end">
+                <Link
+                  href="/auth/forgot-password"
+                  className="text-base leading-6 text-[color:var(--Text-BodyPrimary)] font-normal link-wavy-underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+            </div>
 
             <Button
               type="submit"

@@ -46,7 +46,7 @@ export default function SignUpPage() {
             Create an account and start curating inspiration
           </p>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5 w-full">
             {error && (
               <div className="p-3 bg-destructive/10 text-destructive rounded-md text-sm">{error}</div>
             )}

@@ -20,6 +20,34 @@ import { cn } from "@/lib/utils"
 
 type DropzoneErrorType = "incorrect-file-type" | "too-much-inspiration"
 
+const DEFAULT_COLLECTION_GRID_COLUMNS = 6
+const MIN_COLLECTION_GRID_COLUMNS = 1
+const MAX_COLLECTION_GRID_COLUMNS = 6
+
+function clampCollectionGridColumns(n: number) {
+  return Math.min(
+    MAX_COLLECTION_GRID_COLUMNS,
+    Math.max(MIN_COLLECTION_GRID_COLUMNS, Math.round(n)),
+  )
+}
+
+function collectionGridColumnsStorageKey(boardId: string) {
+  return `curator.collection.gridColumns:${boardId}`
+}
+
+function readStoredGridColumns(boardId: string): number | null {
+  if (typeof window === "undefined") return null
+  try {
+    const raw = localStorage.getItem(collectionGridColumnsStorageKey(boardId))
+    if (raw == null) return null
+    const parsed = parseInt(raw, 10)
+    if (!Number.isFinite(parsed)) return null
+    return clampCollectionGridColumns(parsed)
+  } catch {
+    return null
+  }
+}
+
 interface DashboardShellProps {
   user: User
   initialBoards: Board[]
@@ -28,6 +56,8 @@ interface DashboardShellProps {
   boardId: string | null
   /** Initial name for the active collection (board), used for the editable header title. */
   boardName?: string | null
+  /** Persisted grid column count from the server when the column exists; omit if the API has no `grid_columns` yet. */
+  initialGridColumns?: number
 }
 
 export function DashboardShell({
@@ -36,13 +66,22 @@ export function DashboardShell({
   initialItems,
   boardId,
   boardName,
+  initialGridColumns,
 }: DashboardShellProps) {
   const router = useRouter()
   const supabase = createClient()
 
   const [boards, setBoards] = useState<Board[]>(initialBoards)
   const [items, setItems] = useState(initialItems)
-  const [columns, setColumns] = useState(6)
+  const [columns, setColumns] = useState(() => {
+    if (typeof initialGridColumns === "number") {
+      return clampCollectionGridColumns(initialGridColumns)
+    }
+    if (!boardId) return DEFAULT_COLLECTION_GRID_COLUMNS
+    return clampCollectionGridColumns(
+      readStoredGridColumns(boardId) ?? DEFAULT_COLLECTION_GRID_COLUMNS,
+    )
+  })
   const [search, setSearch] = useState("")
   const [filterType, setFilterType] = useState<string | null>(null)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
@@ -65,12 +104,68 @@ export function DashboardShell({
   const emptyDropzoneInnerRef = useRef<HTMLDivElement | null>(null)
   const emptyDropzoneRef = useRef<HTMLDivElement | null>(null)
   const [clampEmptyDropzoneTop, setClampEmptyDropzoneTop] = useState(false)
+  /** When the column slider changes layout, preserve window scroll (avoids focus/scroll-into-view jumps from fixed controls). */
+  const columnsInteractionScrollYRef = useRef<number | null>(null)
 
   const filterBoard = boardId
 
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  useEffect(() => {
+    if (!boardId) return
+    if (typeof initialGridColumns === "number") {
+      setColumns(clampCollectionGridColumns(initialGridColumns))
+      return
+    }
+    setColumns(
+      clampCollectionGridColumns(
+        readStoredGridColumns(boardId) ?? DEFAULT_COLLECTION_GRID_COLUMNS,
+      ),
+    )
+  }, [boardId, initialGridColumns])
+
+  const handleColumnsChange = useCallback(
+    (value: number) => {
+      const next = clampCollectionGridColumns(value)
+      columnsInteractionScrollYRef.current = window.scrollY
+      setColumns(next)
+      if (!boardId) return
+      void (async () => {
+        const { error } = await supabase
+          .from("boards")
+          .update({ grid_columns: next })
+          .eq("id", boardId)
+        if (error) {
+          const parts = [error.message, error.code, error.details, error.hint].filter(Boolean)
+          console.error("Failed to save grid size:", parts.length ? parts.join(" | ") : error)
+          try {
+            localStorage.setItem(collectionGridColumnsStorageKey(boardId), String(next))
+          } catch {
+            /* ignore */
+          }
+          return
+        }
+        try {
+          localStorage.removeItem(collectionGridColumnsStorageKey(boardId))
+        } catch {
+          /* ignore */
+        }
+        setBoards((prev) =>
+          prev.map((board) => (board.id === boardId ? { ...board, grid_columns: next } : board)),
+        )
+      })()
+    },
+    [boardId, supabase],
+  )
+
+  useLayoutEffect(() => {
+    const y = columnsInteractionScrollYRef.current
+    if (y === null) return
+    columnsInteractionScrollYRef.current = null
+    window.scrollTo({ top: y, left: 0, behavior: "instant" })
+  }, [columns])
 
   useEffect(() => {
     if (!bulkBarExiting) return
@@ -357,7 +452,7 @@ export function DashboardShell({
           search={search}
           onSearchChange={setSearch}
           columns={columns}
-          onColumnsChange={setColumns}
+          onColumnsChange={handleColumnsChange}
           onAddClick={() => setAddDialogOpen(true)}
           filterType={filterType}
           onFilterTypeChange={setFilterType}
@@ -384,7 +479,7 @@ export function DashboardShell({
       )}
 
       <div className="flex flex-1">
-        <main className="flex flex-1 min-h-0 flex-col p-4 pt-[128px]">
+        <main className="flex flex-1 min-h-0 flex-col p-4 pt-[128px] [overflow-anchor:none]">
           {boardId && (
             <div className="mb-8">
               <div className="flex items-center justify-between md:hidden">
@@ -709,9 +804,9 @@ export function DashboardShell({
           <div className="pointer-events-auto flex items-center gap-6">
             <SizeSlider
               value={columns}
-              onValueChange={setColumns}
-              min={1}
-              max={6}
+              onValueChange={handleColumnsChange}
+              min={MIN_COLLECTION_GRID_COLUMNS}
+              max={MAX_COLLECTION_GRID_COLUMNS}
               aria-label="Columns per row"
               className="max-[767px]:hidden"
             />
