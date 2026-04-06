@@ -23,7 +23,6 @@ type DropzoneErrorType = "incorrect-file-type" | "too-much-inspiration"
 const DEFAULT_COLLECTION_GRID_COLUMNS = 6
 const MIN_COLLECTION_GRID_COLUMNS = 1
 const MAX_COLLECTION_GRID_COLUMNS = 6
-const MOBILE_AUTO_LOAD_EMBEDS_STORAGE_KEY = "curator.mobile.autoLoadEmbeds"
 
 function clampCollectionGridColumns(n: number) {
   return Math.min(
@@ -46,15 +45,6 @@ function readStoredGridColumns(boardId: string): number | null {
     return clampCollectionGridColumns(parsed)
   } catch {
     return null
-  }
-}
-
-function readStoredMobileAutoLoadEmbeds(): boolean {
-  if (typeof window === "undefined") return false
-  try {
-    return localStorage.getItem(MOBILE_AUTO_LOAD_EMBEDS_STORAGE_KEY) === "1"
-  } catch {
-    return false
   }
 }
 
@@ -110,7 +100,6 @@ export function DashboardShell({
   const [dropzoneErrorJiggleNonce, setDropzoneErrorJiggleNonce] = useState(0)
   const [docIconHovered, setDocIconHovered] = useState(false)
   const [isSmOnlyViewport, setIsSmOnlyViewport] = useState(false)
-  const [mobileAutoLoadEmbeds, setMobileAutoLoadEmbeds] = useState(readStoredMobileAutoLoadEmbeds)
 
   const emptyDropzoneInnerRef = useRef<HTMLDivElement | null>(null)
   const emptyDropzoneRef = useRef<HTMLDivElement | null>(null)
@@ -214,14 +203,6 @@ export function DashboardShell({
     window.addEventListener("resize", update)
     return () => window.removeEventListener("resize", update)
   }, [])
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(MOBILE_AUTO_LOAD_EMBEDS_STORAGE_KEY, mobileAutoLoadEmbeds ? "1" : "0")
-    } catch {
-      /* ignore */
-    }
-  }, [mobileAutoLoadEmbeds])
 
   const filteredItems = items.filter((item) => {
     if (search) {
@@ -780,7 +761,6 @@ export function DashboardShell({
             <MasonryGrid
               items={filteredItems}
               columns={effectiveColumns}
-              mobileAutoLoadEmbeds={mobileAutoLoadEmbeds}
               selectedIds={selectedIds}
               onToggleSelect={toggleSelect}
             onEditItem={(item) => {
@@ -831,16 +811,6 @@ export function DashboardShell({
               className="max-[767px]:hidden"
             />
             <Button
-              variant="secondary"
-              size="sm"
-              className="max-[767px]:inline-flex hidden"
-              onClick={() => setMobileAutoLoadEmbeds((v) => !v)}
-              aria-pressed={mobileAutoLoadEmbeds}
-              aria-label="Toggle auto-load live previews on mobile"
-            >
-              {mobileAutoLoadEmbeds ? "Auto previews: on" : "Auto previews: off"}
-            </Button>
-            <Button
               size="icon"
               className="cta-icon"
               onClick={() => setAddDialogOpen(true)}
@@ -865,8 +835,10 @@ export function DashboardShell({
         onItemAdded={(newItem) => {
           if (newItem) {
             setItems((prev) => [newItem, ...prev])
+          } else {
+            // Fallback for flows that do not return the inserted item.
+            refreshItems()
           }
-          refreshItems()
           refreshBoards()
         }}
         initialFiles={initialFiles ?? undefined}

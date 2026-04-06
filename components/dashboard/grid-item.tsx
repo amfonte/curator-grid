@@ -14,7 +14,6 @@ interface GridItemProps {
   columns: number
   item: Item & { item_boards: { board_id: string }[] }
   disableLiveEmbeds?: boolean
-  manualLiveEmbeds?: boolean
   selected: boolean
   onToggleSelect: () => void
   onEdit: () => void
@@ -48,7 +47,6 @@ export function GridItem({
   columns,
   item,
   disableLiveEmbeds = false,
-  manualLiveEmbeds = false,
   selected,
   onToggleSelect,
   onEdit,
@@ -71,7 +69,6 @@ export function GridItem({
   const [iframeInstanceKey, setIframeInstanceKey] = useState(0)
   const hasRetriedRef = useRef(false)
   const [iframeDebugStatus, setIframeDebugStatus] = useState<IframeDebugStatus>("idle")
-  const [liveEmbedEnabled, setLiveEmbedEnabled] = useState(!manualLiveEmbeds)
   const isDev = process.env.NODE_ENV === "development"
 
   const isLargeDensity = columns <= 2
@@ -100,15 +97,10 @@ export function GridItem({
   const hasScreenshot = !!(item.screenshot_url || item.file_url)
   const showIframe =
     !disableLiveEmbeds &&
-    liveEmbedEnabled &&
     !hasScreenshot &&
     !item.iframe_blocked &&
     !iframePolicyBlockedRef.current &&
     !iframeLikelyBlocked
-
-  useEffect(() => {
-    setLiveEmbedEnabled(!manualLiveEmbeds)
-  }, [manualLiveEmbeds, item.id])
 
   useEffect(() => {
     const cacheKey = item.original_url || ""
@@ -279,6 +271,7 @@ export function GridItem({
           className="block w-full"
           style={imageStyle}
           loading="lazy"
+          decoding="async"
           onLoad={
             !hasNativeSize
               ? (e) => {
@@ -329,6 +322,7 @@ export function GridItem({
                   alt={item.title || "Uploaded image"}
                   className="mx-auto h-auto max-h-full max-w-full"
                   style={imageStyle}
+                  decoding="async"
                 />
               </div>
             </DialogPrimitive.Content>
@@ -665,6 +659,7 @@ export function GridItem({
             alt={item.title || item.domain || item.original_url || "Website screenshot"}
             className="h-full w-full object-cover"
             loading="lazy"
+            decoding="async"
           />
         ) : (
           iframePlaceholder
@@ -693,18 +688,6 @@ export function GridItem({
               onError={handleIframeError}
               style={{ width: nativeSize.width, height: nativeSize.height }}
             />
-          </div>
-        )}
-        {manualLiveEmbeds && !liveEmbedEnabled && !item.iframe_blocked && !iframeLikelyBlocked && (
-          <div className="pointer-events-none absolute inset-0 flex items-end justify-end p-3">
-            <Button
-              size="sm"
-              className="pointer-events-auto"
-              onClick={() => setLiveEmbedEnabled(true)}
-              aria-label="Load live preview"
-            >
-              Load live preview
-            </Button>
           </div>
         )}
       </div>

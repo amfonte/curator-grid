@@ -2,7 +2,7 @@
 
 import React from "react"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useCallback } from "react"
 import dynamic from "next/dynamic"
 import { motion } from "motion/react"
 import { useDialKit } from "dialkit"
@@ -200,6 +200,7 @@ export function AddItemDialog({
   const [isDropzoneErrorJiggling, setIsDropzoneErrorJiggling] = useState(false)
   const [docIconHovered, setDocIconHovered] = useState(false)
   const dropzoneErrorJiggleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const previewObjectUrlRef = useRef<string | null>(null)
   const docsDial = useDialKit("Empty canvas docs", {
     usePhysics: false,
     enter: {
@@ -269,13 +270,21 @@ export function AddItemDialog({
     }, 340)
   }
 
+  const clearPreviewObjectUrl = useCallback(() => {
+    if (previewObjectUrlRef.current) {
+      URL.revokeObjectURL(previewObjectUrlRef.current)
+      previewObjectUrlRef.current = null
+    }
+  }, [])
+
   React.useEffect(() => {
     return () => {
       if (dropzoneErrorJiggleTimeoutRef.current) {
         clearTimeout(dropzoneErrorJiggleTimeoutRef.current)
       }
+      clearPreviewObjectUrl()
     }
-  }, [])
+  }, [clearPreviewObjectUrl])
 
   // URL state
   const [url, setUrl] = useState("")
@@ -302,6 +311,7 @@ export function AddItemDialog({
   }, [open, initialFiles])
 
   function resetForm() {
+    clearPreviewObjectUrl()
     setFile(null)
     setImagePreview(null)
     setPendingFiles([])
@@ -314,24 +324,28 @@ export function AddItemDialog({
     setSelectedBoard("")
   }
 
-  function loadPreview(nextFile: File | null) {
-    if (!nextFile) {
-      setImagePreview(null)
-      return
-    }
-    const reader = new FileReader()
-    reader.onload = (ev) => setImagePreview(ev.target?.result as string)
-    reader.onerror = () => {
-      // If the file can't be read for preview, treat it as a generic upload issue.
-      // (This can happen with corrupt images even if their mime type is allowed.)
-      setDropzoneErrorWithJiggle("too-much-inspiration")
-      setFile(null)
-      setImagePreview(null)
-      setPendingFiles([])
-      setCurrentFileIndex(0)
-    }
-    reader.readAsDataURL(nextFile)
-  }
+  const loadPreview = useCallback(
+    (nextFile: File | null) => {
+      clearPreviewObjectUrl()
+      if (!nextFile) {
+        setImagePreview(null)
+        return
+      }
+      try {
+        const objectUrl = URL.createObjectURL(nextFile)
+        previewObjectUrlRef.current = objectUrl
+        setImagePreview(objectUrl)
+      } catch {
+        // If preview URL creation fails, treat it as a generic upload issue.
+        setDropzoneErrorWithJiggle("too-much-inspiration")
+        setFile(null)
+        setImagePreview(null)
+        setPendingFiles([])
+        setCurrentFileIndex(0)
+      }
+    },
+    [clearPreviewObjectUrl],
+  )
 
   function handleFilesSelected(files: File[]) {
     const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"])
