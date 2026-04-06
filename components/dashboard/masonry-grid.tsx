@@ -8,6 +8,7 @@ import { GridItem } from "@/components/dashboard/grid-item"
 interface MasonryGridProps {
   items: (Item & { item_boards: { board_id: string }[] })[]
   columns: number
+  mobileAutoLoadEmbeds?: boolean
   selectedIds: Set<string>
   onToggleSelect: (id: string) => void
   onEditItem: (item: MasonryGridProps["items"][0]) => void
@@ -73,6 +74,7 @@ function LazyGridCell({
   item,
   columns,
   isMobileViewport,
+  mobileAutoLoadEmbeds,
   selected,
   onToggleSelect,
   onEdit,
@@ -81,6 +83,7 @@ function LazyGridCell({
   item: MasonryGridProps["items"][0]
   columns: number
   isMobileViewport: boolean
+  mobileAutoLoadEmbeds: boolean
   selected: boolean
   onToggleSelect: () => void
   onEdit: () => void
@@ -124,6 +127,7 @@ function LazyGridCell({
         <GridItem
           columns={columns}
           item={item}
+          manualLiveEmbeds={isMobileViewport && !mobileAutoLoadEmbeds}
           selected={selected}
           onToggleSelect={onToggleSelect}
           onEdit={onEdit}
@@ -139,6 +143,7 @@ function LazyGridCell({
 export function MasonryGrid({
   items,
   columns,
+  mobileAutoLoadEmbeds = false,
   selectedIds,
   onToggleSelect,
   onEditItem,
@@ -205,6 +210,7 @@ export function MasonryGrid({
                 key={item.id}
                 columns={1}
                 isMobileViewport
+                mobileAutoLoadEmbeds={mobileAutoLoadEmbeds}
                 item={item}
                 selected={selectedIds.has(item.id)}
                 onToggleSelect={() => onToggleSelect(item.id)}
@@ -240,6 +246,7 @@ export function MasonryGrid({
                 key={item.id}
                 columns={columns}
                 isMobileViewport={false}
+                mobileAutoLoadEmbeds={false}
                 item={item}
                 selected={selectedIds.has(item.id)}
                 onToggleSelect={() => onToggleSelect(item.id)}
