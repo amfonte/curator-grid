@@ -142,6 +142,19 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
   const createSlotRef = useRef<HTMLLIElement | null>(null)
   const cancelSnapHandledRef = useRef(false)
 
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") return
+
+    // On first dashboard paint (especially after auth redirects on mobile),
+    // browsers may restore a stale scroll position. Force top-of-page so the
+    // collections view starts from a consistent state.
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" })
+    const frame = window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [])
+
   // Do not show or count the legacy "Unsorted" default board — treat as no collections.
   const allUserBoards = useMemo(
     () =>
@@ -360,7 +373,7 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex flex-col bg-background">
       <TopNav
         search={dashboardSearch}
         onSearchChange={setDashboardSearch}

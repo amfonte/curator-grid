@@ -446,7 +446,7 @@ export function DashboardShell({
   )
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex flex-col bg-background">
       {mounted ? (
         <TopNav
           search={search}
@@ -478,8 +478,7 @@ export function DashboardShell({
         </header>
       )}
 
-      <div className="flex flex-1">
-        <main className="flex flex-1 min-h-0 flex-col p-4 pt-[128px] [overflow-anchor:none]">
+      <main className="flex flex-col p-4 pt-[128px] [overflow-anchor:none]">
           {boardId && (
             <div className="mb-8">
               <div className="flex items-center justify-between md:hidden">
@@ -771,7 +770,6 @@ export function DashboardShell({
             />
           )}
         </main>
-      </div>
 
       {(selectedIds.size > 0 || bulkBarExiting) && (
         <div
