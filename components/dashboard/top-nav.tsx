@@ -1,7 +1,8 @@
 "use client"
 
 import type { User } from "@supabase/supabase-js"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
+import { usePathname } from "next/navigation"
 import { logout } from "@/app/auth/actions"
 import { Button } from "@/components/ui/button"
 import {
@@ -28,6 +29,20 @@ interface TopNavProps {
   showAddCollection?: boolean
 }
 
+/** Subpixel / rounding: below this, treat the page as non-scrollable so rubber-band
+ *  and micro-movement on mobile do not drive the hide-on-scroll header. */
+const SCROLL_OVERFLOW_THRESHOLD_PX = 8
+
+function getDocumentMaxScrollY() {
+  if (typeof document === "undefined") return 0
+  const el = document.documentElement
+  return Math.max(0, el.scrollHeight - window.innerHeight)
+}
+
+function documentHasScrollableOverflow() {
+  return getDocumentMaxScrollY() > SCROLL_OVERFLOW_THRESHOLD_PX
+}
+
 export function TopNav(props: TopNavProps) {
   const {
     search,
@@ -37,6 +52,7 @@ export function TopNav(props: TopNavProps) {
     isCollectionView = false,
     showAddCollection = false,
   } = props
+  const pathname = usePathname()
   const [mounted, setMounted] = useState(false)
   const [isHidden, setIsHidden] = useState(false)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
@@ -45,8 +61,29 @@ export function TopNav(props: TopNavProps) {
 
   useEffect(() => setMounted(true), [])
 
+  useLayoutEffect(() => {
+    lastScrollYRef.current = window.scrollY
+    if (!documentHasScrollableOverflow()) {
+      setIsHidden(false)
+      if (revealTimeoutRef.current !== null) {
+        window.clearTimeout(revealTimeoutRef.current)
+        revealTimeoutRef.current = null
+      }
+    }
+  }, [pathname])
+
   useEffect(() => {
     const handleScroll = () => {
+      if (!documentHasScrollableOverflow()) {
+        setIsHidden(false)
+        lastScrollYRef.current = window.scrollY
+        if (revealTimeoutRef.current !== null) {
+          window.clearTimeout(revealTimeoutRef.current)
+          revealTimeoutRef.current = null
+        }
+        return
+      }
+
       const currentY = window.scrollY || 0
       const prevY = lastScrollYRef.current
       const delta = currentY - prevY
@@ -82,6 +119,38 @@ export function TopNav(props: TopNavProps) {
         window.clearTimeout(revealTimeoutRef.current)
         revealTimeoutRef.current = null
       }
+    }
+  }, [])
+
+  useEffect(() => {
+    const syncIfNoOverflow = () => {
+      if (!documentHasScrollableOverflow()) {
+        setIsHidden(false)
+        if (revealTimeoutRef.current !== null) {
+          window.clearTimeout(revealTimeoutRef.current)
+          revealTimeoutRef.current = null
+        }
+      }
+    }
+
+    window.addEventListener("resize", syncIfNoOverflow)
+    window.addEventListener("orientationchange", syncIfNoOverflow)
+    const vv = window.visualViewport
+    vv?.addEventListener("resize", syncIfNoOverflow)
+
+    let resizeObserver: ResizeObserver | null = null
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(() => syncIfNoOverflow())
+      resizeObserver.observe(document.documentElement)
+    }
+
+    syncIfNoOverflow()
+
+    return () => {
+      window.removeEventListener("resize", syncIfNoOverflow)
+      window.removeEventListener("orientationchange", syncIfNoOverflow)
+      vv?.removeEventListener("resize", syncIfNoOverflow)
+      resizeObserver?.disconnect()
     }
   }, [])
 
