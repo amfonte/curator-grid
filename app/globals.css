@@ -821,48 +821,45 @@ button.cta-secondary.cta-icon:active,
     animation: curator-header-slide-down 0.24s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  /* Figma-style dropdown popover arrow using exported asset. */
+  /* Figma-style dropdown popover pointers (local SVGs in /public/figma-assets/). */
   .dropdown-popover {
     position: relative;
   }
 
-  .dropdown-popover::after {
+  .dropdown-popover[data-side="bottom"]::after,
+  .dropdown-popover[data-side="top"]::after {
     content: "";
     position: absolute;
     width: 32px;
-    height: 11px;
+    height: 10px;
     background-repeat: no-repeat;
-    background-size: 32px 11px;
-    filter:
-      drop-shadow(0 1px 2px rgba(0, 0, 0, 0.02))
-      drop-shadow(0 4px 4px rgba(0, 0, 0, 0.02))
-      drop-shadow(0 9px 5px rgba(0, 0, 0, 0.01));
+    background-size: 32px 10px;
+    /* No drop-shadow here: it draws past the triangle tip and reads as a seam on the panel below. */
   }
 
+  /* Menu below trigger: pointer-up toward the anchor (1px overlap hides subpixel hairline vs panel). */
   .dropdown-popover[data-side="bottom"]::after {
-    top: -11px;
-    transform: scaleY(-1);
-    background-image: url("https://www.figma.com/api/mcp/asset/f2e0400e-5993-47d8-9206-0f9f67cf1913");
+    top: -9px;
+    background-image: url("/figma-assets/pointer-up.svg");
+    filter: drop-shadow(0 -1px 0 rgba(0, 0, 0, 0.05));
   }
 
+  /* Menu above trigger: pointer-down toward the anchor. */
   .dropdown-popover[data-side="top"]::after {
-    bottom: -11px;
-    background-image: url("https://www.figma.com/api/mcp/asset/f2e0400e-5993-47d8-9206-0f9f67cf1913");
+    bottom: -9px;
+    background-image: url("/figma-assets/pointer-down.svg");
+    filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.05));
   }
 
   /* Centered pointer (e.g. Move to collection) */
-  .dropdown-popover[data-align="center"]::after {
+  .dropdown-popover[data-align="center"][data-side="bottom"]::after,
+  .dropdown-popover[data-align="center"][data-side="top"]::after {
     left: 50%;
     transform: translateX(-50%);
   }
 
   /* Right-aligned pointer for account icon menu (align=end). */
-  .dropdown-popover[data-align="end"][data-side="bottom"]::after {
-    left: auto;
-    right: 8px;
-    transform: scaleY(-1);
-  }
-
+  .dropdown-popover[data-align="end"][data-side="bottom"]::after,
   .dropdown-popover[data-align="end"][data-side="top"]::after {
     left: auto;
     right: 8px;

@@ -72,6 +72,7 @@ function GridItemPlaceholder({
 function LazyGridCell({
   item,
   columns,
+  isMobileViewport,
   selected,
   onToggleSelect,
   onEdit,
@@ -79,6 +80,7 @@ function LazyGridCell({
 }: {
   item: MasonryGridProps["items"][0]
   columns: number
+  isMobileViewport: boolean
   selected: boolean
   onToggleSelect: () => void
   onEdit: () => void
@@ -86,19 +88,7 @@ function LazyGridCell({
 }) {
   const [isNearViewport, setIsNearViewport] = useState(false)
   const [hasActivated, setHasActivated] = useState(false)
-  const [isMobileViewport, setIsMobileViewport] = useState(
-    () => typeof window !== "undefined" && window.innerWidth <= MOBILE_BREAKPOINT_PX,
-  )
   const itemRef = useRef<HTMLDivElement | null>(null)
-
-  useEffect(() => {
-    const updateIsMobileViewport = () => {
-      setIsMobileViewport(window.innerWidth <= MOBILE_BREAKPOINT_PX)
-    }
-    updateIsMobileViewport()
-    window.addEventListener("resize", updateIsMobileViewport)
-    return () => window.removeEventListener("resize", updateIsMobileViewport)
-  }, [])
 
   useEffect(() => {
     const element = itemRef.current
@@ -203,6 +193,32 @@ export function MasonryGrid({
 
   const visibleItems = items.slice(0, Math.min(renderCount, items.length))
   const safeColumns = Math.max(columns, 1)
+  const isSimpleMobileLayout = isMobileViewport
+
+  if (isSimpleMobileLayout) {
+    return (
+      <>
+        <div className="masonry-grid masonry-grid--cols-1">
+          <div className="masonry-grid-column" style={{ width: "100%" }}>
+            {visibleItems.map((item) => (
+              <LazyGridCell
+                key={item.id}
+                columns={1}
+                isMobileViewport
+                item={item}
+                selected={selectedIds.has(item.id)}
+                onToggleSelect={() => onToggleSelect(item.id)}
+                onEdit={() => onEditItem(item)}
+                onDelete={() => onDeleteItem(item.id)}
+              />
+            ))}
+          </div>
+        </div>
+        {visibleItems.length < items.length && <div ref={loadMoreRef} className="h-4 w-full" aria-hidden="true" />}
+      </>
+    )
+  }
+
   const itemsByColumn: typeof visibleItems[] = Array.from({ length: safeColumns }, () => [])
   // Strict chronological ordering across columns: left-to-right, top-to-bottom.
   visibleItems.forEach((item, index) => {
@@ -223,6 +239,7 @@ export function MasonryGrid({
               <LazyGridCell
                 key={item.id}
                 columns={columns}
+                isMobileViewport={false}
                 item={item}
                 selected={selectedIds.has(item.id)}
                 onToggleSelect={() => onToggleSelect(item.id)}

@@ -13,6 +13,7 @@ import { createClient } from "@/lib/supabase/client"
 interface GridItemProps {
   columns: number
   item: Item & { item_boards: { board_id: string }[] }
+  disableLiveEmbeds?: boolean
   selected: boolean
   onToggleSelect: () => void
   onEdit: () => void
@@ -45,6 +46,7 @@ const iframePolicyPromiseCache = new Map<string, Promise<boolean>>()
 export function GridItem({
   columns,
   item,
+  disableLiveEmbeds = false,
   selected,
   onToggleSelect,
   onEdit,
@@ -93,7 +95,12 @@ export function GridItem({
     ? "h-9 w-9 shrink-0 text-foreground hover:bg-accent hover:text-accent-foreground [&_svg]:size-6"
     : "h-7 w-7 shrink-0 text-foreground hover:bg-accent hover:text-accent-foreground [&_svg]:size-4"
   const hasScreenshot = !!(item.screenshot_url || item.file_url)
-  const showIframe = !hasScreenshot && !item.iframe_blocked && !iframePolicyBlockedRef.current && !iframeLikelyBlocked
+  const showIframe =
+    !disableLiveEmbeds &&
+    !hasScreenshot &&
+    !item.iframe_blocked &&
+    !iframePolicyBlockedRef.current &&
+    !iframeLikelyBlocked
 
   useEffect(() => {
     const cacheKey = item.original_url || ""
@@ -110,7 +117,7 @@ export function GridItem({
       window.clearTimeout(iframeLoadTimeoutRef.current)
       iframeLoadTimeoutRef.current = null
     }
-  }, [item.id, item.original_url])
+  }, [item.id, item.original_url, item.iframe_blocked])
 
   useEffect(() => {
     if (!showIframe || iframeLoaded) return
