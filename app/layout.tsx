@@ -1,6 +1,8 @@
 import React from "react"
 import type { Metadata } from "next"
 import { Host_Grotesk } from "next/font/google"
+import { Analytics } from "@vercel/analytics/next"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import { SuppressParamsEnumerationWarning } from "@/components/suppress-params-enumeration-warning"
 import { DialKitDevMount } from "@/components/DialKitDevMount"
 import "./globals.css"
@@ -74,6 +76,8 @@ export default function RootLayout({
       <body className={`${hostGrotesk.variable} font-sans antialiased`}>
         <SuppressParamsEnumerationWarning />
         {children}
+        <Analytics />
+        <SpeedInsights />
         <DialKitDevMount />
       </body>
     </html>
