@@ -858,6 +858,14 @@ button.cta-secondary.cta-icon:active,
     transform: translateX(-50%);
   }
 
+  /* Match centered top pointer shadow with popover surface (Move to collection). */
+  .dropdown-popover[data-align="center"][data-side="top"]::after {
+    filter:
+      drop-shadow(0 1px 0 rgba(0, 0, 0, 0.05))
+      drop-shadow(0 2px 1px rgba(0, 0, 0, 0.05))
+      drop-shadow(0 5px 4px rgba(0, 0, 0, 0.05))
+  }
+
   /* Right-aligned pointer for account icon menu (align=end). */
   .dropdown-popover[data-align="end"][data-side="bottom"]::after,
   .dropdown-popover[data-align="end"][data-side="top"]::after {

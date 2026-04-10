@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useEffect, useLayoutEffect, useRef } from "react"
+import { useState, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
 import type { User } from "@supabase/supabase-js"
 import type { Item, Board } from "@/lib/types"
@@ -10,6 +10,8 @@ import { TopNav } from "@/components/dashboard/top-nav"
 import { MasonryGrid } from "@/components/dashboard/masonry-grid"
 import { AddItemDialog } from "@/components/dashboard/add-item-dialog"
 import { EditItemDialog } from "@/components/dashboard/edit-item-dialog"
+import { CustomizeCollectionDialog } from "@/components/dashboard/customize-collection-dialog"
+import { CustomizeCollectionIcon } from "@/components/icons/customize-collection-icon"
 import { BulkBar } from "@/components/dashboard/bulk-bar"
 import { SizeSlider } from "@/components/dashboard/size-slider"
 import { Button } from "@/components/ui/button"
@@ -17,6 +19,12 @@ import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 import { ArrowLeftFromLine, Plus, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import {
+  DEFAULT_FOLDER_APPEARANCE,
+  parseFolderAppearance,
+  sanitizeDrawing,
+  type FolderAppearance,
+} from "@/lib/folder-customization"
 
 type DropzoneErrorType = "incorrect-file-type" | "too-much-inspiration"
 
@@ -100,8 +108,12 @@ export function DashboardShell({
   const [dropzoneErrorJiggleNonce, setDropzoneErrorJiggleNonce] = useState(0)
   const [docIconHovered, setDocIconHovered] = useState(false)
   const [isSmOnlyViewport, setIsSmOnlyViewport] = useState(false)
+  const [customizeOpen, setCustomizeOpen] = useState(false)
+  const [collectionAppearance, setCollectionAppearance] = useState<FolderAppearance>(
+    DEFAULT_FOLDER_APPEARANCE,
+  )
 
-  const emptyDropzoneInnerRef = useRef<HTMLDivElement | null>(null)
+  const emptyDropzoneRegionRef = useRef<HTMLDivElement | null>(null)
   const emptyDropzoneRef = useRef<HTMLDivElement | null>(null)
   const [clampEmptyDropzoneTop, setClampEmptyDropzoneTop] = useState(false)
   /** When the column slider changes layout, preserve window scroll (avoids focus/scroll-into-view jumps from fixed controls). */
@@ -192,6 +204,19 @@ export function DashboardShell({
   useEffect(() => {
     setCollectionName(boardName ?? "")
   }, [boardName])
+
+  useEffect(() => {
+    if (!boardId) return
+    const board = boards.find((candidate) => candidate.id === boardId)
+    if (!board) return
+    setCollectionAppearance(
+      parseFolderAppearance({
+        folder_theme: board.folder_theme,
+        folder_custom_color: board.folder_custom_color,
+        folder_drawing: board.folder_drawing,
+      }),
+    )
+  }, [boardId, boards])
 
   useEffect(() => {
     const update = () => {
@@ -288,6 +313,11 @@ export function DashboardShell({
 
   const hasItemsInCurrentBoard =
     !!filterBoard && items.some((item) => item.item_boards?.some((ib) => ib.board_id === filterBoard))
+
+  const collectionItemCount = useMemo(() => {
+    if (!boardId) return 0
+    return items.filter((item) => item.item_boards?.some((ib) => ib.board_id === boardId)).length
+  }, [boardId, items])
   const effectiveColumns = isSmOnlyViewport ? 1 : columns
   // Avoid potential TDZ issues during hot reload/compilation by ensuring
   // the variable exists with a safe initial value.
@@ -297,21 +327,39 @@ export function DashboardShell({
   useLayoutEffect(() => {
     // Only relevant for the collection-view empty dropzone layout.
     if (!boardId || !isEmptyBoard) return
-    const innerEl = emptyDropzoneInnerRef.current
+    const regionEl = emptyDropzoneRegionRef.current
     const dzEl = emptyDropzoneRef.current
-    if (!innerEl || !dzEl) return
+    if (!regionEl || !dzEl) return
 
     const update = () => {
-      const innerH = innerEl.clientHeight
       const dzH = dzEl.offsetHeight
-      // If the dropzone doesn't fit inside the inner 85% region,
-      // clamp it to the top instead of centering (which would push it down).
-      setClampEmptyDropzoneTop(dzH >= innerH)
+      // Band height is 90% of the *flex slot* (parent), not the region box — when
+      // clamped, region is content-sized and would make innerBandH tiny and trap us
+      // in clamp forever. Compare band vs panel: if the band would be ≤ the panel,
+      // skip the inset band + inner scroll and let the document scroll instead.
+      const slotEl = regionEl.parentElement
+      const slotH = slotEl?.clientHeight ?? regionEl.clientHeight
+      const innerBandH = slotH * 0.9
+      const bandH = Math.round(innerBandH)
+      const panelH = Math.round(dzH)
+      setClampEmptyDropzoneTop(bandH <= panelH)
     }
 
     update()
     window.addEventListener("resize", update)
-    return () => window.removeEventListener("resize", update)
+    const parent = regionEl.parentElement
+    const ro =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(() => {
+            update()
+          })
+        : null
+    ro?.observe(regionEl)
+    if (parent) ro?.observe(parent)
+    return () => {
+      window.removeEventListener("resize", update)
+      ro?.disconnect()
+    }
   }, [boardId, isEmptyBoard, dropzoneErrorJiggleNonce])
 
   const refreshItems = useCallback(async () => {
@@ -416,6 +464,48 @@ export function DashboardShell({
     [boardId, supabase],
   )
 
+  const handleSaveCollectionAppearance = useCallback(
+    async (next: FolderAppearance) => {
+      if (!boardId) return
+      const payload = {
+        folder_theme: next.theme,
+        folder_custom_color: next.theme === "custom" ? next.customColor : null,
+        folder_drawing: sanitizeDrawing(next.drawing),
+      }
+      const { error } = await supabase.from("boards").update(payload).eq("id", boardId)
+      if (error) {
+        const parts = [error.message, error.code, error.details, error.hint].filter(Boolean)
+        const detail = parts.length ? parts.join(" · ") : null
+        console.error(
+          "Failed to save collection customization:",
+          detail ?? "(no message from API — check DB schema and RLS)",
+        )
+        throw new Error(
+          detail ??
+            "Could not save customization. Run scripts/004_board_folder_customization.sql on your Supabase project if you have not added the folder columns yet.",
+        )
+      }
+      setCollectionAppearance({
+        theme: payload.folder_theme,
+        customColor: payload.folder_custom_color,
+        drawing: payload.folder_drawing,
+      })
+      setBoards((prev) =>
+        prev.map((board) =>
+          board.id === boardId
+            ? {
+                ...board,
+                folder_theme: payload.folder_theme,
+                folder_custom_color: payload.folder_custom_color,
+                folder_drawing: payload.folder_drawing,
+              }
+            : board,
+        ),
+      )
+    },
+    [boardId, supabase],
+  )
+
   const renderDocumentsIcon = (frontSrc: string, backSrc: string) => (
     <div className="empty-canvas-documents-icon mb-4" aria-hidden="true">
       <motion.img
@@ -446,7 +536,7 @@ export function DashboardShell({
   )
 
   return (
-    <div className="flex flex-col bg-background">
+    <div className="flex min-h-dvh flex-col bg-background">
       {mounted ? (
         <TopNav
           search={search}
@@ -478,7 +568,7 @@ export function DashboardShell({
         </header>
       )}
 
-      <main className="flex flex-col p-4 pt-[128px] [overflow-anchor:none]">
+      <main className="flex min-h-0 flex-1 flex-col p-4 pt-[128px] [overflow-anchor:none]">
           {boardId && (
             <div className="mb-8">
               <div className="flex items-center justify-between md:hidden">
@@ -527,9 +617,20 @@ export function DashboardShell({
                   </h1>
                 </div>
 
-                <Button variant="secondary" size="lg" className="hidden md:inline-flex" onClick={handleDeleteCollection}>
-                  Delete collection
-                </Button>
+                <div className="hidden items-center gap-6 md:flex">
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="cta-icon max-[767px]:hidden"
+                    onClick={() => setCustomizeOpen(true)}
+                    aria-label="Customize collection"
+                  >
+                    <CustomizeCollectionIcon className="h-6 w-6" />
+                  </Button>
+                  <Button variant="secondary" size="lg" onClick={handleDeleteCollection}>
+                    Delete collection
+                  </Button>
+                </div>
               </div>
             </div>
           )}
@@ -537,196 +638,204 @@ export function DashboardShell({
             <div
               className={cn(
                 search.trim() ? "flex min-h-[200px] items-center justify-center" : "flex min-h-0 flex-1",
-                boardId && isEmptyBoard
-                  ? "items-start justify-start"
-                  : !search.trim() && "items-center justify-center -translate-y-14",
+                boardId && isEmptyBoard ? "flex-col" : !search.trim() && "items-center justify-center -translate-y-14",
               )}
             >
               {boardId && isEmptyBoard ? (
                 <div
-                  ref={emptyDropzoneInnerRef}
+                  ref={emptyDropzoneRegionRef}
                   className={cn(
-                    "flex w-full",
-                    clampEmptyDropzoneTop ? "items-start justify-start" : "items-center justify-center",
+                    "relative flex w-full flex-col",
+                    clampEmptyDropzoneTop ? "flex-none" : "min-h-0 flex-1",
                   )}
-                  style={{ height: "90%" }}
                 >
                   <div
-                    ref={emptyDropzoneRef}
-                    key={dropzoneErrorJiggleNonce}
                     className={cn(
-                      "empty-canvas-dropzone flex w-full items-center justify-center px-8 py-12 transition-colors",
-                      dropzoneError && "dnd-dropzone-error-jiggle",
-                      emptyCanvasDragActive && "empty-canvas-dropzone-active",
+                      "flex w-full flex-col items-center justify-start",
+                      clampEmptyDropzoneTop
+                        ? "relative"
+                        : "absolute inset-x-0 top-[5%] bottom-[5%]",
                     )}
-                    onDragOver={(e) => {
-                      e.preventDefault()
-                      setEmptyCanvasDragActive(true)
-                    }}
-                    onDragEnter={(e) => {
-                      e.preventDefault()
-                      setEmptyCanvasDragActive(true)
-                    }}
-                    onDragLeave={(e) => {
-                      e.preventDefault()
-                      setEmptyCanvasDragActive(false)
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault()
-                      setEmptyCanvasDragActive(false)
-                      const files = Array.from(e.dataTransfer.files ?? [])
-                      if (!files.length) return
-                      const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"])
-                      const valid = files.filter((f) => allowedTypes.has(f.type))
-                      if (valid.length === 0) {
-                        console.warn(
-                          "No supported files dropped; only JPG, PNG, and WebP are supported right now.",
-                        )
-                        setDropzoneErrorWithJiggle("incorrect-file-type")
-                        return
-                      }
-
-                      setDropzoneError(null)
-                      setInitialFiles(valid)
-                      setAddDialogOpen(true)
-                    }}
                   >
-                  {/* Mobile: dedicated 400×400 border so dashes aren't stretched */}
-                  <svg
-                    className="empty-canvas-border block sm:hidden max-[767px]:hidden"
-                    viewBox="0 0 400 400"
-                    preserveAspectRatio="none"
-                    aria-hidden="true"
-                  >
-                    <rect
-                      x="1"
-                      y="1"
-                      width="398"
-                      height="398"
-                      rx="24"
-                      ry="24"
-                      className="empty-canvas-border-rect"
-                    />
-                  </svg>
+                    <div
+                      ref={emptyDropzoneRef}
+                      key={dropzoneErrorJiggleNonce}
+                      className={cn(
+                        // shrink-0: band uses flex-col; without this, a short viewport shrinks
+                        // the panel below globals.css fixed heights (400/520px) instead of scrolling.
+                        "empty-canvas-dropzone flex w-full shrink-0 items-center justify-center px-8 py-12 transition-colors",
+                        dropzoneError && "dnd-dropzone-error-jiggle",
+                        emptyCanvasDragActive && "empty-canvas-dropzone-active",
+                      )}
+                      onDragOver={(e) => {
+                        e.preventDefault()
+                        setEmptyCanvasDragActive(true)
+                      }}
+                      onDragEnter={(e) => {
+                        e.preventDefault()
+                        setEmptyCanvasDragActive(true)
+                      }}
+                      onDragLeave={(e) => {
+                        e.preventDefault()
+                        setEmptyCanvasDragActive(false)
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault()
+                        setEmptyCanvasDragActive(false)
+                        const files = Array.from(e.dataTransfer.files ?? [])
+                        if (!files.length) return
+                        const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"])
+                        const valid = files.filter((f) => allowedTypes.has(f.type))
+                        if (valid.length === 0) {
+                          console.warn(
+                            "No supported files dropped; only JPG, PNG, and WebP are supported right now.",
+                          )
+                          setDropzoneErrorWithJiggle("incorrect-file-type")
+                          return
+                        }
 
-                  {/* Desktop & tablet: original 690×520 border */}
-                  <svg
-                    className="empty-canvas-border hidden sm:block max-[767px]:hidden"
-                    viewBox="0 0 690 520"
-                    preserveAspectRatio="none"
-                    aria-hidden="true"
-                  >
-                    <rect
-                      x="1"
-                      y="1"
-                      width="688"
-                      height="518"
-                      rx="24"
-                      ry="24"
-                      className="empty-canvas-border-rect"
-                    />
-                  </svg>
+                        setDropzoneError(null)
+                        setInitialFiles(valid)
+                        setAddDialogOpen(true)
+                      }}
+                    >
+                      {/* Mobile: dedicated 400×400 border so dashes aren't stretched */}
+                      <svg
+                        className="empty-canvas-border block sm:hidden max-[767px]:hidden"
+                        viewBox="0 0 400 400"
+                        preserveAspectRatio="none"
+                        aria-hidden="true"
+                      >
+                        <rect
+                          x="1"
+                          y="1"
+                          width="398"
+                          height="398"
+                          rx="24"
+                          ry="24"
+                          className="empty-canvas-border-rect"
+                        />
+                      </svg>
 
-                  <button
-                    type="button"
-                    className="pointer-events-auto flex max-w-lg flex-1 flex-col items-center gap-3 text-center"
-                    onClick={() => fileInputRef.current?.click()}
-                    onMouseEnter={() => setDocIconHovered(true)}
-                    onMouseLeave={() => setDocIconHovered(false)}
-                    onFocus={() => setDocIconHovered(true)}
-                    onBlur={() => setDocIconHovered(false)}
-                  >
-                    {dropzoneError ? (
-                      <>
-                        {/* Render error docs with the same front/back layers so hover spread works. */}
-                        {renderDocumentsIcon("/figma-assets/dnd-doc-error.svg", "/figma-assets/dnd-doc-error.svg")}
-                        <p
-                          className="text-center"
-                          style={{
-                            color: "var(--Text-BodyPrimary, #333)",
-                            fontFamily: 'var(--font-family-All, "Host Grotesk")',
-                            fontSize: "var(--font-size-Medium, 24px)",
-                            fontStyle: "normal",
-                            fontWeight: 500,
-                            lineHeight: "var(--font-line-height-Medium, 28px)",
-                          }}
-                        >
-                          {dropzoneError === "too-much-inspiration"
-                            ? "Too much inspiration"
-                            : "Incorrect file type"}
-                        </p>
-                        <p
-                          className="text-center"
-                          style={{
-                            color: "var(--Text-BodySecondary, #6F6F6F)",
-                            fontFamily: 'var(--font-family-All, "Host Grotesk")',
-                            fontSize: "var(--font-size-Base, 16px)",
-                            fontStyle: "normal",
-                            fontWeight: 400,
-                            lineHeight: "var(--font-line-height-Base, 24px)",
-                          }}
-                        >
-                          {dropzoneError === "too-much-inspiration"
-                            ? "There was an error uploading your items. Please try again."
-                            : "Only PNG, JPG, or WebP formats are supported at this time."}
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        {renderDocumentsIcon("/figma-assets/dnd-doc-1.svg", "/figma-assets/dnd-doc-2.svg")}
-                        <p
-                          className="text-center"
-                          style={{
-                            color: "var(--Text-BodyPrimary, #333)",
-                            fontFamily: 'var(--font-family-All, "Host Grotesk")',
-                            fontSize: "var(--font-size-Medium, 24px)",
-                            fontStyle: "normal",
-                            fontWeight: 500,
-                            lineHeight: "var(--font-line-height-Medium, 28px)",
-                          }}
-                        >
-                          Drag and drop or upload files
-                        </p>
-                        <p
-                          className="text-center"
-                          style={{
-                            color: "var(--Text-BodySecondary, #6F6F6F)",
-                            fontFamily: 'var(--font-family-All, "Host Grotesk")',
-                            fontSize: "var(--font-size-Base, 16px)",
-                            fontStyle: "normal",
-                            fontWeight: 400,
-                            lineHeight: "var(--font-line-height-Base, 24px)",
-                          }}
-                        >
-                          PNG, JPG, and WebP formats
-                        </p>
-                      </>
-                    )}
-                  </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    className="hidden"
-                    multiple
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={(e) => {
-                      const files = Array.from(e.target.files ?? [])
-                      if (!files.length) return
-                      const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"])
-                      const valid = files.filter((f) => allowedTypes.has(f.type))
-                      if (valid.length === 0) {
-                        console.warn(
-                          "No supported files selected; only JPG, PNG, and WebP are supported right now.",
-                        )
-                        setDropzoneErrorWithJiggle("incorrect-file-type")
-                        return
-                      }
+                      {/* Desktop & tablet: original 690×520 border */}
+                      <svg
+                        className="empty-canvas-border hidden sm:block max-[767px]:hidden"
+                        viewBox="0 0 690 520"
+                        preserveAspectRatio="none"
+                        aria-hidden="true"
+                      >
+                        <rect
+                          x="1"
+                          y="1"
+                          width="688"
+                          height="518"
+                          rx="24"
+                          ry="24"
+                          className="empty-canvas-border-rect"
+                        />
+                      </svg>
 
-                      setDropzoneError(null)
-                      setInitialFiles(valid)
-                      setAddDialogOpen(true)
-                    }}
-                  />
+                      <button
+                        type="button"
+                        className="pointer-events-auto flex max-w-lg flex-1 flex-col items-center gap-3 text-center"
+                        onClick={() => fileInputRef.current?.click()}
+                        onMouseEnter={() => setDocIconHovered(true)}
+                        onMouseLeave={() => setDocIconHovered(false)}
+                        onFocus={() => setDocIconHovered(true)}
+                        onBlur={() => setDocIconHovered(false)}
+                      >
+                        {dropzoneError ? (
+                          <>
+                            {/* Render error docs with the same front/back layers so hover spread works. */}
+                            {renderDocumentsIcon("/figma-assets/dnd-doc-error.svg", "/figma-assets/dnd-doc-error.svg")}
+                            <p
+                              className="text-center"
+                              style={{
+                                color: "var(--Text-BodyPrimary, #333)",
+                                fontFamily: 'var(--font-family-All, "Host Grotesk")',
+                                fontSize: "var(--font-size-Medium, 24px)",
+                                fontStyle: "normal",
+                                fontWeight: 500,
+                                lineHeight: "var(--font-line-height-Medium, 28px)",
+                              }}
+                            >
+                              {dropzoneError === "too-much-inspiration"
+                                ? "Too much inspiration"
+                                : "Incorrect file type"}
+                            </p>
+                            <p
+                              className="text-center"
+                              style={{
+                                color: "var(--Text-BodySecondary, #6F6F6F)",
+                                fontFamily: 'var(--font-family-All, "Host Grotesk")',
+                                fontSize: "var(--font-size-Base, 16px)",
+                                fontStyle: "normal",
+                                fontWeight: 400,
+                                lineHeight: "var(--font-line-height-Base, 24px)",
+                              }}
+                            >
+                              {dropzoneError === "too-much-inspiration"
+                                ? "There was an error uploading your items. Please try again."
+                                : "Only PNG, JPG, or WebP formats are supported at this time."}
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            {renderDocumentsIcon("/figma-assets/dnd-doc-1.svg", "/figma-assets/dnd-doc-2.svg")}
+                            <p
+                              className="text-center"
+                              style={{
+                                color: "var(--Text-BodyPrimary, #333)",
+                                fontFamily: 'var(--font-family-All, "Host Grotesk")',
+                                fontSize: "var(--font-size-Medium, 24px)",
+                                fontStyle: "normal",
+                                fontWeight: 500,
+                                lineHeight: "var(--font-line-height-Medium, 28px)",
+                              }}
+                            >
+                              Drag and drop or upload files
+                            </p>
+                            <p
+                              className="text-center"
+                              style={{
+                                color: "var(--Text-BodySecondary, #6F6F6F)",
+                                fontFamily: 'var(--font-family-All, "Host Grotesk")',
+                                fontSize: "var(--font-size-Base, 16px)",
+                                fontStyle: "normal",
+                                fontWeight: 400,
+                                lineHeight: "var(--font-line-height-Base, 24px)",
+                              }}
+                            >
+                              PNG, JPG, and WebP formats
+                            </p>
+                          </>
+                        )}
+                      </button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        className="hidden"
+                        multiple
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files ?? [])
+                          if (!files.length) return
+                          const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"])
+                          const valid = files.filter((f) => allowedTypes.has(f.type))
+                          if (valid.length === 0) {
+                            console.warn(
+                              "No supported files selected; only JPG, PNG, and WebP are supported right now.",
+                            )
+                            setDropzoneErrorWithJiggle("incorrect-file-type")
+                            return
+                          }
+
+                          setDropzoneError(null)
+                          setInitialFiles(valid)
+                          setAddDialogOpen(true)
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -869,6 +978,14 @@ export function DashboardShell({
           }}
         />
       )}
+      <CustomizeCollectionDialog
+        open={customizeOpen}
+        onOpenChange={setCustomizeOpen}
+        collectionName={collectionName || "Untitled collection"}
+        itemCount={collectionItemCount}
+        initialAppearance={collectionAppearance}
+        onSave={handleSaveCollectionAppearance}
+      />
     </div>
   )
 }

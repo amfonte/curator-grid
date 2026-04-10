@@ -73,7 +73,9 @@ export default function RootLayout({
           media="(prefers-color-scheme: dark)"
         />
       </head>
-      <body className={`${hostGrotesk.variable} font-sans antialiased`}>
+      <body
+        className={`${hostGrotesk.variable} min-h-dvh font-sans antialiased`}
+      >
         <SuppressParamsEnumerationWarning />
         {children}
         <Analytics />

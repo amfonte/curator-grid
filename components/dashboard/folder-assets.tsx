@@ -1,6 +1,7 @@
 "use client"
 
 import type { SVGProps } from "react"
+import { cn } from "@/lib/utils"
 
 /**
  * Inline SVG assets for the Folder component (no img + object-cover).
@@ -44,8 +45,8 @@ export function FolderUnion({
           y2="232"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stopColor="#DBDBDB" />
-          <stop offset="1" stopColor="#B3B3B3" />
+          <stop stopColor="var(--folder-union-top, #DBDBDB)" />
+          <stop offset="1" stopColor="var(--folder-union-bottom, #B3B3B3)" />
         </linearGradient>
       </defs>
     </svg>
@@ -55,9 +56,12 @@ export function FolderUnion({
 export function FolderRect1({
   idPrefix,
   className,
+  innerShadowAlphaScale = 1,
   ...props
-}: SVGProps<SVGSVGElement> & { idPrefix: string }) {
+}: SVGProps<SVGSVGElement> & { idPrefix: string; innerShadowAlphaScale?: number }) {
   const p = prefixIds(idPrefix, "filter0_i_0_13", "paint0_linear_0_13")
+  const a = Math.max(0, Math.min(1, innerShadowAlphaScale))
+  const innerShadowMatrix = `0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 ${a} 0`
   return (
     <svg
       preserveAspectRatio="none"
@@ -92,12 +96,12 @@ export function FolderRect1({
           <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
           <feOffset dy="1" />
           <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
-          <feColorMatrix type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0" />
+          <feColorMatrix type="matrix" values={innerShadowMatrix} />
           <feBlend mode="normal" in2="shape" result="effect1_innerShadow_0_13" />
         </filter>
         <linearGradient id={p.paint0_linear_0_13} x1="174.73" y1="0" x2="174.73" y2="192" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#E6E6E6" />
-          <stop offset="1" stopColor="#DBDBDB" />
+          <stop stopColor="var(--folder-front-top, #E6E6E6)" />
+          <stop offset="1" stopColor="var(--folder-front-bottom, #DBDBDB)" />
         </linearGradient>
       </defs>
     </svg>
@@ -148,8 +152,8 @@ export function FolderRect2({
           <feBlend mode="normal" in2="shape" result="effect1_innerShadow_0_12" />
         </filter>
         <linearGradient id={p.paint0_linear_0_12} x1="178.512" y1="0" x2="178.512" y2="184" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#E6E6E6" />
-          <stop offset="1" stopColor="#DBDBDB" />
+          <stop stopColor="var(--folder-front-top, #E6E6E6)" />
+          <stop offset="1" stopColor="var(--folder-front-bottom, #DBDBDB)" />
         </linearGradient>
       </defs>
     </svg>
@@ -185,8 +189,8 @@ export function FolderRect3({
           y2="13"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stopColor="white" />
-          <stop offset="1" stopColor="#DBDBDB" />
+          <stop stopColor="var(--folder-back-top, #FFFFFF)" />
+          <stop offset="1" stopColor="var(--folder-back-bottom, #DBDBDB)" />
         </linearGradient>
       </defs>
     </svg>
@@ -215,8 +219,8 @@ export function FolderRect4({
       <path id="Rectangle_2" d="M0 0H305V152H0V0Z" fill={`url(#${p.paint0_linear_0_6})`} />
       <defs>
         <linearGradient id={p.paint0_linear_0_6} x1="152.5" y1="0" x2="152.5" y2="12.6667" gradientUnits="userSpaceOnUse">
-          <stop stopColor="white" />
-          <stop offset="1" stopColor="#DBDBDB" />
+          <stop stopColor="var(--folder-back-top, #FFFFFF)" />
+          <stop offset="1" stopColor="var(--folder-back-bottom, #DBDBDB)" />
         </linearGradient>
       </defs>
     </svg>
@@ -245,8 +249,8 @@ export function FolderRect5({
       <path id="Rectangle_2" d="M0 0H309V152H0V0Z" fill={`url(#${p.paint0_linear_0_5})`} />
       <defs>
         <linearGradient id={p.paint0_linear_0_5} x1="154.5" y1="0" x2="154.5" y2="12.6667" gradientUnits="userSpaceOnUse">
-          <stop stopColor="white" />
-          <stop offset="1" stopColor="#DBDBDB" />
+          <stop stopColor="var(--folder-back-top, #FFFFFF)" />
+          <stop offset="1" stopColor="var(--folder-back-bottom, #DBDBDB)" />
         </linearGradient>
       </defs>
     </svg>
@@ -256,9 +260,12 @@ export function FolderRect5({
 export function FolderRect6({
   idPrefix,
   className,
+  innerShadowAlphaScale = 1,
   ...props
-}: SVGProps<SVGSVGElement> & { idPrefix: string }) {
+}: SVGProps<SVGSVGElement> & { idPrefix: string; innerShadowAlphaScale?: number }) {
   const p = prefixIds(idPrefix, "filter0_i_0_4", "paint0_linear_0_4")
+  const a = Math.max(0, Math.min(1, innerShadowAlphaScale))
+  const innerShadowMatrix = `0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 ${a} 0`
   return (
     <svg
       preserveAspectRatio="none"
@@ -293,12 +300,12 @@ export function FolderRect6({
           <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
           <feOffset dy="1" />
           <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
-          <feColorMatrix type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0" />
+          <feColorMatrix type="matrix" values={innerShadowMatrix} />
           <feBlend mode="normal" in2="shape" result="effect1_innerShadow_0_4" />
         </filter>
         <linearGradient id={p.paint0_linear_0_4} x1="174.73" y1="0" x2="174.73" y2="192" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#E6E6E6" />
-          <stop offset="1" stopColor="#DBDBDB" />
+          <stop stopColor="var(--folder-front-top, #E6E6E6)" />
+          <stop offset="1" stopColor="var(--folder-front-bottom, #DBDBDB)" />
         </linearGradient>
       </defs>
     </svg>
@@ -308,24 +315,32 @@ export function FolderRect6({
 export function FolderLine({
   idPrefix,
   className,
+  lineShadowOpacity = 0.8,
   ...props
-}: SVGProps<SVGSVGElement> & { idPrefix: string }) {
+}: SVGProps<SVGSVGElement> & { idPrefix: string; lineShadowOpacity?: number }) {
   const p = prefixIds(idPrefix, "filter0_d_0_11")
+  const shadowA = Math.max(0, Math.min(1, lineShadowOpacity))
+  const shadowMatrix = `0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 ${shadowA} 0`
   return (
     <svg
       preserveAspectRatio="none"
       width="100%"
       height="100%"
       overflow="visible"
-      style={{ display: "block" }}
       viewBox="0 0 287 2"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={className}
+      className={cn("block", className)}
       {...props}
     >
       <g id="Line_3" filter={`url(#${p.filter0_d_0_11})`}>
-        <line y1="0.5" x2="287" y2="0.5" stroke="var(--stroke-0, #B3B3B3)" />
+        <line
+          y1="0.5"
+          x2="287"
+          y2="0.5"
+          stroke="var(--folder-line-stroke, var(--stroke-0, #B3B3B3))"
+          strokeOpacity="var(--folder-line-stroke-opacity, 1)"
+        />
       </g>
       <defs>
         <filter
@@ -341,7 +356,7 @@ export function FolderLine({
           <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
           <feOffset dy="1" />
           <feComposite in2="hardAlpha" operator="out" />
-          <feColorMatrix type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.8 0" />
+          <feColorMatrix type="matrix" values={shadowMatrix} />
           <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_0_11" />
           <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_0_11" result="shape" />
         </filter>

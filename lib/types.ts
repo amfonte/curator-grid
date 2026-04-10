@@ -29,6 +29,9 @@ export interface Board {
   name: string
   /** Masonry columns (1–6); default 6 when missing (legacy rows). */
   grid_columns?: number | null
+  folder_theme?: "gray" | "manila" | "blue" | "pink" | "green" | "custom" | null
+  folder_custom_color?: string | null
+  folder_drawing?: unknown
   created_at: string
   updated_at: string
   item_count?: number

@@ -10,13 +10,11 @@ import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import { getRandomQuote, getRandomQuoteOtherThan } from "@/lib/quotes"
 import { CreateCollectionFolder } from "@/components/dashboard/create-collection-folder"
-import { Folder as FigmaFolder } from "@/components/dashboard/folder"
+import { ScaledFolderFrame } from "@/components/dashboard/scaled-folder-frame"
+import { parseFolderAppearance } from "@/lib/folder-customization"
 
 const QUOTE_CYCLE_MS = 6000
 
-/** Full-size folder dimensions (match CreateCollectionFolder / Figma). */
-const FOLDER_HEIGHT_PX = 232
-const FOLDER_WIDTH_PX = 335
 /** Grid slide: duration when opening (grid slides right). */
 const GRID_SLIDE_MS = 260
 /** Grid slide: duration when cancelling (grid slides back); longer for a more graceful finish. */
@@ -26,32 +24,19 @@ const GRID_SLIDE_EASE_OPEN = "cubic-bezier(0.33, 1, 0.68, 1)"
 /** Easing when cancelling (grid slides back): stronger ease-out for a more graceful finish. */
 const GRID_SLIDE_EASE_CANCEL = "cubic-bezier(0.16, 1, 0.3, 1)"
 
-function CollectionCard({
-  board,
-  FigmaFolder: FolderComponent,
-}: {
-  board: Board
-  FigmaFolder: typeof FigmaFolder
-}) {
+function CollectionCard({ board }: { board: Board }) {
   const [hover, setHover] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [scale, setScale] = useState({ x: 1, y: 1 })
+  const appearance = useMemo(
+    () =>
+      parseFolderAppearance({
+        folder_theme: board.folder_theme,
+        folder_custom_color: board.folder_custom_color,
+        folder_drawing: board.folder_drawing,
+      }),
+    [board.folder_custom_color, board.folder_drawing, board.folder_theme],
+  )
   const itemCount = board.item_count ?? 0
   const folderType = itemCount > 0 ? "Filled" as const : "Empty" as const
-
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    const ro = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect
-      setScale({
-        x: width / FOLDER_WIDTH_PX,
-        y: height / FOLDER_HEIGHT_PX,
-      })
-    })
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
 
   return (
     <li className="min-w-0 w-full" data-board-id={String(board.id)}>
@@ -62,26 +47,12 @@ function CollectionCard({
         onMouseLeave={() => setHover(false)}
       >
         {/* Container sizes to cell; folder graphic scales to fill it */}
-        <div
-          ref={containerRef}
-          className="relative w-full shrink-0 overflow-hidden"
-          style={{ aspectRatio: "335 / 232" }}
-        >
-          <div
-            className="absolute left-0 top-0 origin-top-left"
-            style={{
-              width: FOLDER_WIDTH_PX,
-              height: FOLDER_HEIGHT_PX,
-              transform: `scale(${scale.x}, ${scale.y})`,
-            }}
-          >
-            <FolderComponent
-              type={folderType}
-              state={hover ? "Hover" : "Default"}
-              className="h-full w-full"
-            />
-          </div>
-        </div>
+        <ScaledFolderFrame
+          wrapperClassName="w-full"
+          type={folderType}
+          state={hover ? "Hover" : "Default"}
+          appearance={appearance}
+        />
         {/* Body/base-reg label row: title left, item count right */}
         <div className="mt-3 flex w-full items-baseline justify-between px-2">
           <p className="truncate text-left text-base font-normal leading-6 text-foreground">
@@ -534,11 +505,7 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
                     </li>
                   )}
                   {userBoards.map((board) => (
-                    <CollectionCard
-                      key={board.id}
-                      board={board}
-                      FigmaFolder={FigmaFolder}
-                    />
+                    <CollectionCard key={board.id} board={board} />
                   ))}
                 </ul>
               )}
