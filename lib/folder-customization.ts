@@ -32,7 +32,7 @@ export interface FolderGradientTheme {
 }
 
 export const PRESET_THEME_COLORS: Record<Exclude<FolderTheme, "custom">, FolderGradientTheme> = {
-  gray: { frontTop: "#DBDBDB", frontBottom: "#B3B3B3", backPanel: "#B3B3B3" },
+  gray: { frontTop: "#E6E6E6", frontBottom: "#DBDBDB", backPanel: "#DBDBDB" },
   manila: { frontTop: "#FAE9D4", frontBottom: "#FADEBB", backPanel: "#FADEBB" },
   blue: { frontTop: "#CCF1FF", frontBottom: "#B2EAFF", backPanel: "#B2EAFF" },
   pink: { frontTop: "#FFE5EE", frontBottom: "#FFCCDD", backPanel: "#FFCCDD" },
@@ -192,9 +192,6 @@ export function getFolderRidgeLineStyle(
   customColor?: string | null,
 ): { stroke: string; strokeOpacity: number; lineShadowOpacity: number } {
   const lineShadowOpacity = lineDropShadowOpacityForSurface(theme, customColor)
-  if (theme === "gray") {
-    return { stroke: "#B3B3B3", strokeOpacity: 1, lineShadowOpacity }
-  }
   const g = getThemeGradient(theme, customColor)
   const top = hexToRgb(g.frontTop)
   const bot = hexToRgb(g.frontBottom)

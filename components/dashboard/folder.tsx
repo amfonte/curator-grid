@@ -69,8 +69,8 @@ const FRONT_PANEL_HEIGHT = 192
 function buildSurfaceVars(theme: FolderTheme, gradient: FolderGradientTheme): CSSProperties {
   if (theme === "gray") {
     return {
-      ["--folder-union-top" as string]: "#DBDBDB",
-      ["--folder-union-bottom" as string]: "#B3B3B3",
+      ["--folder-union-top" as string]: "#E6E6E6",
+      ["--folder-union-bottom" as string]: "#DBDBDB",
       ["--folder-front-top" as string]: "#E6E6E6",
       ["--folder-front-bottom" as string]: "#DBDBDB",
       ["--folder-back-top" as string]: "#FFFFFF",

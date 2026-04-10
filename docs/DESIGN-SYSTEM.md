@@ -18,7 +18,7 @@ Base palette used by semantic tokens. Values are hex.
 | 10     | `#FFFFFF` | White              |
 | 20     | `#F5F5F5` | Very light gray   |
 | 30     | `#EDEDED` | Light gray        |
-| 40     | `#EBEBEB` | Light gray        |
+| 40     | `#e6e6e6` | Light gray        |
 | 50     | `#DBDBDB` | Medium light gray |
 | 60     | `#B3B3B3` | Medium gray       |
 | 70     | `#6F6F6F` | Medium dark gray  |
@@ -108,7 +108,7 @@ Semantic tokens reference the Grayscale primitive. Modes: **Light** and **Dark**
   --gray-10: #FFFFFF;
   --gray-20: #F5F5F5;
   --gray-30: #EDEDED;
-  --gray-40: #EBEBEB;
+  --gray-40: #e6e6e6;
   --gray-50: #DBDBDB;
   --gray-60: #B3B3B3;
   --gray-70: #6F6F6F;

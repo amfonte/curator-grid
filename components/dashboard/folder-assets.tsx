@@ -45,8 +45,8 @@ export function FolderUnion({
           y2="232"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stopColor="var(--folder-union-top, #DBDBDB)" />
-          <stop offset="1" stopColor="var(--folder-union-bottom, #B3B3B3)" />
+          <stop stopColor="var(--folder-union-top, #E6E6E6)" />
+          <stop offset="1" stopColor="var(--folder-union-bottom, #DBDBDB)" />
         </linearGradient>
       </defs>
     </svg>
