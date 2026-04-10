@@ -48,6 +48,106 @@ const ACHROMATIC_S = 0.02
 const CUSTOM_SWATCH_IDLE =
   "conic-gradient(from 0deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)"
 
+/**
+ * Two layers behind the fill — hover and active must be separate so `animation` on active
+ * does not kill `transition` on hover (same `::before` can’t do both cleanly).
+ * Stack: hover z-0, active z-[1], fill z-[2], inner rim ::after z-[3].
+ */
+const SWATCH_RING_HOVER_BASE =
+  "pointer-events-none absolute inset-[-2px] z-0 box-border border-2 border-solid border-[var(--gray-50)] origin-center transition-transform duration-200 ease-out motion-reduce:transition-none motion-reduce:duration-0"
+
+const SWATCH_RING_ACTIVE_BASE =
+  "pointer-events-none absolute inset-[-2px] z-[1] box-border border-2 border-solid origin-center"
+
+const SWATCH_RING_ACTIVE_ON =
+  "border-[var(--gray-90)] animate-[curator-swatch-stroke-activate_200ms_ease-out_forwards] motion-reduce:animate-none motion-reduce:scale-100"
+
+const SWATCH_RING_ACTIVE_OFF = "scale-0 border-transparent"
+
+/** Matches `curator-swatch-stroke-activate` duration in globals.css. */
+const SWATCH_ACTIVE_ANIM_MS = 200
+
+/**
+ * When becoming active, keep the hover ring visible until the active stroke animation
+ * finishes, then hide it — avoids a visual gap between gray-50 and gray-90.
+ */
+function useDeferHoverRingCollapseWhileActiveAnimates(active: boolean) {
+  const prevActiveRef = useRef(active)
+  const [collapseHoverRing, setCollapseHoverRing] = useState(() => active)
+
+  useEffect(() => {
+    if (!active) {
+      setCollapseHoverRing(false)
+      prevActiveRef.current = false
+      return
+    }
+
+    const wasActive = prevActiveRef.current
+    prevActiveRef.current = true
+
+    if (!wasActive) {
+      setCollapseHoverRing(false)
+      const id = window.setTimeout(() => setCollapseHoverRing(true), SWATCH_ACTIVE_ANIM_MS)
+      return () => window.clearTimeout(id)
+    }
+  }, [active])
+
+  return active && collapseHoverRing
+}
+
+function FolderColorPresetButton({
+  presetKey,
+  selected,
+  frontTop,
+  frontBottom,
+  onSelect,
+}: {
+  presetKey: Exclude<FolderTheme, "custom">
+  selected: boolean
+  frontTop: string
+  frontBottom: string
+  onSelect: () => void
+}) {
+  const hideHoverRing = useDeferHoverRingCollapseWhileActiveAnimates(selected)
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-label={`Folder color ${presetKey}`}
+      className="group relative isolate size-12 shrink-0 rounded-full after:pointer-events-none after:absolute after:inset-0 after:z-[3] after:rounded-full after:border-4 after:border-[var(--gray-10)] after:content-['']"
+    >
+      <span
+        aria-hidden
+        className={cn(
+          SWATCH_RING_HOVER_BASE,
+          "rounded-full",
+          !selected
+            ? "scale-90 group-hover:scale-100"
+            : hideHoverRing
+              ? "scale-0 border-transparent"
+              : "scale-100",
+        )}
+      />
+      <span
+        aria-hidden
+        className={cn(
+          SWATCH_RING_ACTIVE_BASE,
+          "rounded-full",
+          selected ? SWATCH_RING_ACTIVE_ON : SWATCH_RING_ACTIVE_OFF,
+        )}
+      />
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-[2] rounded-full"
+        style={{
+          background: `linear-gradient(180deg, ${frontTop} 0%, ${frontBottom} 100%)`,
+        }}
+      />
+    </button>
+  )
+}
+
 type HsvColor = {
   h: number
   s: number
@@ -162,6 +262,8 @@ export function CustomizeCollectionDialog({
 
 
   const customControlActive = customColorPopoverOpen || draft.theme === "custom"
+  const hideCustomHoverRing = useDeferHoverRingCollapseWhileActiveAnimates(customControlActive)
+  const hideDrawHoverRing = useDeferHoverRingCollapseWhileActiveAnimates(drawMode)
 
   const folderType = itemCount > 0 ? ("Filled" as const) : ("Empty" as const)
 
@@ -336,19 +438,13 @@ export function CustomizeCollectionDialog({
                   const gradient = getThemeGradient(preset.key)
                   const selected = draft.theme === preset.key && !customColorPopoverOpen
                   return (
-                    <button
+                    <FolderColorPresetButton
                       key={preset.key}
-                      type="button"
-                      onClick={() => setPresetTheme(preset.key)}
-                      aria-label={`Folder color ${preset.key}`}
-                      className={cn(
-                        "relative size-12 shrink-0 rounded-full transition after:pointer-events-none after:absolute after:inset-0 after:rounded-full after:border-4 after:border-[var(--gray-10)] after:content-['']",
-                        selected &&
-                          "outline outline-2 outline-[var(--gray-90)] outline-offset-0",
-                      )}
-                      style={{
-                        background: `linear-gradient(180deg, ${gradient.frontTop} 0%, ${gradient.frontBottom} 100%)`,
-                      }}
+                      presetKey={preset.key}
+                      selected={selected}
+                      frontTop={gradient.frontTop}
+                      frontBottom={gradient.frontBottom}
+                      onSelect={() => setPresetTheme(preset.key)}
                     />
                   )
                 })}
@@ -377,16 +473,36 @@ export function CustomizeCollectionDialog({
                       ref={customColorTriggerRef}
                       type="button"
                       aria-label="Custom folder color"
-                      className={cn(
-                        "relative size-12 shrink-0 rounded-[24px] bg-[var(--gray-10)] transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring after:pointer-events-none after:absolute after:inset-0 after:rounded-[24px] after:border-4 after:border-[var(--gray-10)] after:content-['']",
-                        customControlActive &&
-                          "outline outline-2 outline-[var(--gray-90)] outline-offset-0",
-                      )}
+                      className="group relative isolate size-12 shrink-0 rounded-[24px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring after:pointer-events-none after:absolute after:inset-0 after:z-[3] after:rounded-[24px] after:border-4 after:border-[var(--gray-10)] after:content-['']"
                     >
+                      <span
+                        aria-hidden
+                        className={cn(
+                          SWATCH_RING_HOVER_BASE,
+                          "rounded-[26px]",
+                          !customControlActive
+                            ? "scale-90 group-hover:scale-100"
+                            : hideCustomHoverRing
+                              ? "scale-0 border-transparent"
+                              : "scale-100",
+                        )}
+                      />
+                      <span
+                        aria-hidden
+                        className={cn(
+                          SWATCH_RING_ACTIVE_BASE,
+                          "rounded-[26px]",
+                          customControlActive ? SWATCH_RING_ACTIVE_ON : SWATCH_RING_ACTIVE_OFF,
+                        )}
+                      />
+                      <span
+                        aria-hidden
+                        className="pointer-events-none absolute inset-0 z-[2] rounded-[24px] bg-[var(--gray-10)]"
+                      />
                       <svg
                         width={0}
                         height={0}
-                        className="pointer-events-none absolute"
+                        className="pointer-events-none absolute z-[3]"
                         aria-hidden
                       >
                         <defs>
@@ -403,7 +519,7 @@ export function CustomizeCollectionDialog({
                         </defs>
                       </svg>
                       <span
-                        className="absolute left-1 top-1 isolate size-10"
+                        className="absolute left-1 top-1 z-[3] isolate size-10"
                         style={{
                           clipPath: "circle(50% at 50% 50%)",
                           WebkitClipPath: "circle(50% at 50% 50%)",
@@ -429,7 +545,7 @@ export function CustomizeCollectionDialog({
                   <DropdownMenuContent
                     align="center"
                     side="top"
-                    sideOffset={12}
+                    sideOffset={20}
                     onCloseAutoFocus={(event) => {
                       event.preventDefault()
                       customColorTriggerRef.current?.blur()
@@ -529,21 +645,42 @@ export function CustomizeCollectionDialog({
                     type="button"
                     aria-label={drawMode ? "Drawing on" : "Drawing off"}
                     aria-pressed={drawMode}
-                    className={cn(
-                      "relative size-12 shrink-0 rounded-[24px] bg-[var(--gray-10)] transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring after:pointer-events-none after:absolute after:inset-0 after:rounded-[24px] after:border-4 after:border-[var(--gray-10)] after:content-['']",
-                      drawMode && "outline outline-2 outline-[var(--gray-90)] outline-offset-0",
-                    )}
+                    className="group relative isolate size-12 shrink-0 rounded-[24px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring after:pointer-events-none after:absolute after:inset-0 after:z-[3] after:rounded-[24px] after:border-4 after:border-[var(--gray-10)] after:content-['']"
                     onClick={() => setDrawMode((prev) => !prev)}
                   >
                     <span
-                      className="absolute left-1 top-1 size-10 rounded-full bg-[var(--surface-tertiary)]"
+                      aria-hidden
+                      className={cn(
+                        SWATCH_RING_HOVER_BASE,
+                        "rounded-[26px]",
+                        !drawMode
+                          ? "scale-90 group-hover:scale-100"
+                          : hideDrawHoverRing
+                            ? "scale-0 border-transparent"
+                            : "scale-100",
+                      )}
+                    />
+                    <span
+                      aria-hidden
+                      className={cn(
+                        SWATCH_RING_ACTIVE_BASE,
+                        "rounded-[26px]",
+                        drawMode ? SWATCH_RING_ACTIVE_ON : SWATCH_RING_ACTIVE_OFF,
+                      )}
+                    />
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 z-[2] rounded-[24px] bg-[var(--gray-10)]"
+                    />
+                    <span
+                      className="absolute left-1 top-1 z-[3] size-10 rounded-full bg-[var(--surface-tertiary)]"
                       aria-hidden
                     />
                     <img
                       src="/figma-assets/Brush.svg"
                       alt=""
                       aria-hidden
-                      className="absolute left-1/2 top-1/2 z-10 size-6 -translate-x-1/2 -translate-y-1/2"
+                      className="absolute left-1/2 top-1/2 z-[3] size-6 -translate-x-1/2 -translate-y-1/2"
                     />
                   </button>
                 </div>

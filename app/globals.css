@@ -552,6 +552,16 @@
   animation: poof 320ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
+/* Customize collection — outer stroke ring when a preset / custom / draw control activates (matches 200ms ease-out hover) */
+@keyframes curator-swatch-stroke-activate {
+  from {
+    transform: scale(0.9);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
 /* Grid slide right when create folder appears — runs on mount, no React state delay (avoids jitter) */
 @keyframes grid-slide-in-right {
   from {
