@@ -661,8 +661,10 @@ export function GridItem({
             loading="lazy"
             decoding="async"
           />
-        ) : (
+        ) : !showIframe || !iframeLoaded ? (
           iframePlaceholder
+        ) : (
+          <div className="h-full w-full bg-background" aria-hidden="true" />
         )}
         {showIframe && (
           <div
