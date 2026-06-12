@@ -400,6 +400,10 @@
   margin-inline: 0;
 }
 
+.add-item-panel .edit-screenshot-dropzone {
+  height: 150px;
+}
+
 /* SVG border wrapper and rect for the dashed outline. */
 .empty-canvas-border {
   position: absolute;

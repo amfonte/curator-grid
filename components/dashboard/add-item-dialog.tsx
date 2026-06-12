@@ -30,6 +30,7 @@ import { Loader2, Link as LinkIcon, Image as ImageIcon, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import imageCompression from "browser-image-compression"
 import { AddItemTabsIndicatorStatic } from "./add-item-tabs-indicator-static"
+import { EmptyCanvasBorder } from "./empty-canvas-border"
 
 const AddItemTabsIndicatorDev = dynamic(
   () => import("./add-item-tabs-indicator-dev").then((m) => m.AddItemTabsIndicatorDev),
@@ -685,7 +686,7 @@ export function AddItemDialog({
                   {!inImageSaveStage && (
                     <div
                       className={cn(
-                        "empty-canvas-dropzone relative flex w-full items-center justify-center px-10 py-8 transition-colors",
+                        "empty-canvas-dropzone relative flex w-full items-center justify-center px-10 py-8 max-[767px]:px-8 transition-colors",
                         isDragActive && "empty-canvas-dropzone-active",
                         dropzoneError && "dnd-dropzone-error-jiggle",
                       )}
@@ -715,26 +716,11 @@ export function AddItemDialog({
                         fileInputRef.current?.click()
                       }}
                     >
-                      <svg
-                        className="empty-canvas-border pointer-events-none absolute inset-0 max-[767px]:hidden"
-                        viewBox="0 0 690 520"
-                        preserveAspectRatio="none"
-                        aria-hidden="true"
-                      >
-                        <rect
-                          x="1"
-                          y="1"
-                          width="688"
-                          height="518"
-                          rx="24"
-                          ry="24"
-                          className="empty-canvas-border-rect"
-                        />
-                      </svg>
+                      <EmptyCanvasBorder viewBoxWidth={527} viewBoxHeight={440} />
                       <button
                         type="button"
                         className={cn(
-                          "pointer-events-auto relative z-[1] flex max-w-lg flex-1 flex-col items-center gap-3 px-8 py-10 text-center",
+                          "pointer-events-auto relative z-[1] flex max-w-lg flex-1 flex-col items-center gap-3 px-8 py-10 max-[767px]:px-0 text-center",
                           // The outer dropzone handles the jiggle so it doesn't get clipped.
                         )}
                         onMouseEnter={() => setDocIconHovered(true)}
@@ -791,7 +777,8 @@ export function AddItemDialog({
                                 lineHeight: "var(--font-line-height-Medium, 28px)",
                               }}
                             >
-                              Drag and drop or upload files
+                              <span className="max-[767px]:hidden">Drag and drop or upload files</span>
+                              <span className="hidden max-[767px]:inline">Upload files</span>
                             </p>
                             <p
                               className="text-center"

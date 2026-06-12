@@ -21,6 +21,7 @@ import { FormField } from "@/components/ui/form-field"
 import { Loader2, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import imageCompression from "browser-image-compression"
+import { EmptyCanvasBorder } from "./empty-canvas-border"
 
 interface EditItemDialogProps {
   open: boolean
@@ -314,12 +315,11 @@ export function EditItemDialog({
                   >
                     <div
                       className={cn(
-                        "empty-canvas-dropzone relative flex w-full cursor-pointer items-center justify-center px-4 py-3 transition-colors",
+                        "empty-canvas-dropzone edit-screenshot-dropzone relative flex w-full cursor-pointer items-center justify-center px-4 py-3 transition-colors",
                         isDragActive && "empty-canvas-dropzone-active",
                         dropzoneError && "dnd-dropzone-error-jiggle",
                       )}
                       key={dropzoneErrorJiggleNonce}
-                      style={{ height: "150px" }}
                       onDragOver={(e) => {
                         e.preventDefault()
                         if (!loading) setIsDragActive(true)
@@ -345,24 +345,7 @@ export function EditItemDialog({
                       }}
                     >
                       {!screenshotPreview && (
-                        <svg
-                          className="empty-canvas-border pointer-events-none absolute inset-0 max-[767px]:hidden"
-                          viewBox="0 0 527 150"
-                          preserveAspectRatio="xMidYMid meet"
-                          aria-hidden="true"
-                        >
-                          <rect
-                            x="1"
-                            y="1"
-                            width="525"
-                            height="148"
-                            rx="24"
-                            ry="24"
-                            className="empty-canvas-border-rect"
-                            vectorEffect="non-scaling-stroke"
-                            shapeRendering="geometricPrecision"
-                          />
-                        </svg>
+                        <EmptyCanvasBorder viewBoxWidth={527} viewBoxHeight={150} />
                       )}
                       <button
                         type="button"
@@ -470,7 +453,8 @@ export function EditItemDialog({
                                 lineHeight: "var(--font-line-height-Base, 24px)",
                               }}
                             >
-                              Drag and drop or upload screenshot
+                              <span className="max-[767px]:hidden">Drag and drop or upload screenshot</span>
+                              <span className="hidden max-[767px]:inline">Upload screenshot</span>
                             </p>
                             <p
                               className="text-center"

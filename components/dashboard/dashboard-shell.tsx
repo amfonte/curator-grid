@@ -10,6 +10,7 @@ import { TopNav } from "@/components/dashboard/top-nav"
 import { MasonryGrid } from "@/components/dashboard/masonry-grid"
 import { AddItemDialog } from "@/components/dashboard/add-item-dialog"
 import { EditItemDialog } from "@/components/dashboard/edit-item-dialog"
+import { EmptyCanvasBorder } from "@/components/dashboard/empty-canvas-border"
 import { CustomizeCollectionDialog } from "@/components/dashboard/customize-collection-dialog"
 import { CustomizeCollectionIcon } from "@/components/icons/customize-collection-icon"
 import { BulkBar } from "@/components/dashboard/bulk-bar"
@@ -699,41 +700,17 @@ export function DashboardShell({
                         setAddDialogOpen(true)
                       }}
                     >
-                      {/* Mobile: dedicated 400×400 border so dashes aren't stretched */}
-                      <svg
-                        className="empty-canvas-border block sm:hidden max-[767px]:hidden"
-                        viewBox="0 0 400 400"
-                        preserveAspectRatio="none"
-                        aria-hidden="true"
-                      >
-                        <rect
-                          x="1"
-                          y="1"
-                          width="398"
-                          height="398"
-                          rx="24"
-                          ry="24"
-                          className="empty-canvas-border-rect"
-                        />
-                      </svg>
+                      <EmptyCanvasBorder
+                        viewBoxWidth={400}
+                        viewBoxHeight={400}
+                        className="block sm:hidden"
+                      />
 
-                      {/* Desktop & tablet: original 690×520 border */}
-                      <svg
-                        className="empty-canvas-border hidden sm:block max-[767px]:hidden"
-                        viewBox="0 0 690 520"
-                        preserveAspectRatio="none"
-                        aria-hidden="true"
-                      >
-                        <rect
-                          x="1"
-                          y="1"
-                          width="688"
-                          height="518"
-                          rx="24"
-                          ry="24"
-                          className="empty-canvas-border-rect"
-                        />
-                      </svg>
+                      <EmptyCanvasBorder
+                        viewBoxWidth={690}
+                        viewBoxHeight={520}
+                        className="hidden sm:block"
+                      />
 
                       <button
                         type="button"
@@ -793,7 +770,8 @@ export function DashboardShell({
                                 lineHeight: "var(--font-line-height-Medium, 28px)",
                               }}
                             >
-                              Drag and drop or upload files
+                              <span className="max-[767px]:hidden">Drag and drop or upload files</span>
+                              <span className="hidden max-[767px]:inline">Upload files</span>
                             </p>
                             <p
                               className="text-center"

@@ -266,7 +266,7 @@ export function Folder({
 
   return (
     <div
-      className={cn("relative isolate h-[232px] w-[335px] touch-none", className)}
+      className={cn("relative isolate h-[232px] w-[335px]", className)}
       style={rootStyle}
       role="img"
       aria-label={type === "Empty" ? "Empty folder" : "Folder with contents"}
