@@ -34,10 +34,16 @@ export async function proxy(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser()
 
+    const pathname = request.nextUrl.pathname
+    const isPublicApiRoute = pathname.startsWith("/api/")
+    const isExtensionBridge = pathname === "/auth/extension-bridge"
+    const isPublicPage = pathname === "/" || pathname === "/privacy"
+
     if (
       !user &&
-      !request.nextUrl.pathname.startsWith("/auth") &&
-      request.nextUrl.pathname !== "/"
+      !isPublicApiRoute &&
+      !pathname.startsWith("/auth") &&
+      !isPublicPage
     ) {
       const url = request.nextUrl.clone()
       url.pathname = "/auth/login"
@@ -46,8 +52,10 @@ export async function proxy(request: NextRequest) {
 
     if (
       user &&
-      (request.nextUrl.pathname.startsWith("/auth") ||
-        request.nextUrl.pathname === "/")
+      !isPublicApiRoute &&
+      !isExtensionBridge &&
+      (pathname.startsWith("/auth") ||
+        pathname === "/")
     ) {
       const url = request.nextUrl.clone()
       url.pathname = "/dashboard"
@@ -55,9 +63,12 @@ export async function proxy(request: NextRequest) {
     }
   } catch {
     // Fail closed for protected routes when auth/session lookup fails.
+    const pathname = request.nextUrl.pathname
     if (
-      !request.nextUrl.pathname.startsWith("/auth") &&
-      request.nextUrl.pathname !== "/"
+      !pathname.startsWith("/api/") &&
+      !pathname.startsWith("/auth") &&
+      pathname !== "/" &&
+      pathname !== "/privacy"
     ) {
       const url = request.nextUrl.clone()
       url.pathname = "/auth/error"

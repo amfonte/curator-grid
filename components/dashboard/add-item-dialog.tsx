@@ -666,9 +666,9 @@ export function AddItemDialog({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="mobile">Mobile (393×852)</SelectItem>
-                      <SelectItem value="tablet">Tablet (768×1024)</SelectItem>
                       <SelectItem value="desktop">Desktop (1440×900)</SelectItem>
+                      <SelectItem value="tablet">Tablet (768×1024)</SelectItem>
+                      <SelectItem value="mobile">Mobile (393×852)</SelectItem>
                     </SelectContent>
                   </Select>
                 </FormField>

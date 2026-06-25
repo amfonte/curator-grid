@@ -33,11 +33,13 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Redirect unauthenticated users to login, except for auth pages and the landing page
+  // Redirect unauthenticated users to login, except for auth pages, API routes, and public pages
   if (
     !user &&
+    !request.nextUrl.pathname.startsWith('/api/') &&
     !request.nextUrl.pathname.startsWith('/auth') &&
-    request.nextUrl.pathname !== '/'
+    request.nextUrl.pathname !== '/' &&
+    request.nextUrl.pathname !== '/privacy'
   ) {
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
@@ -47,6 +49,8 @@ export async function updateSession(request: NextRequest) {
   // Redirect authenticated users away from auth pages to dashboard
   if (
     user &&
+    !request.nextUrl.pathname.startsWith('/api/') &&
+    request.nextUrl.pathname !== '/auth/extension-bridge' &&
     (request.nextUrl.pathname.startsWith('/auth') ||
       request.nextUrl.pathname === '/')
   ) {
