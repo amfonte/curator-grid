@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { extensionUnauthorized, getExtensionAuth } from "@/lib/extension/auth"
 import { createImageItem, toErrorMessage } from "@/lib/images/create-image-item"
 
+export const runtime = "nodejs"
 export const maxDuration = 60
 
 export async function POST(request: Request) {
@@ -19,7 +20,8 @@ export async function POST(request: Request) {
   const boardId = formData.get("boardId")
   const sourceName = formData.get("sourceName")
 
-  if (!(fileEntry instanceof File) || fileEntry.size === 0) {
+  const uploadFile = toUploadFile(fileEntry)
+  if (!uploadFile || uploadFile.size === 0) {
     return NextResponse.json({ error: "Image file is required" }, { status: 400 })
   }
 
@@ -47,7 +49,7 @@ export async function POST(request: Request) {
 
   try {
     const item = await createImageItem({
-      file: fileEntry,
+      file: uploadFile,
       title,
       boardId,
       supabase: auth.supabase,
@@ -60,4 +62,11 @@ export async function POST(request: Request) {
     console.error("[extension/save-image]", message, err)
     return NextResponse.json({ error: message }, { status: 500 })
   }
+}
+
+function toUploadFile(entry: FormDataEntryValue | null): File | null {
+  if (entry instanceof File && entry.size > 0) {
+    return entry
+  }
+  return null
 }

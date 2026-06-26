@@ -1,4 +1,3 @@
-import sharp from "sharp"
 import type { SupabaseClient, User } from "@supabase/supabase-js"
 
 const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"])
@@ -11,6 +10,14 @@ export type CreateImageItemResult = {
   type: "image"
   file_url: string
   title: string | null
+}
+
+type PreparedImage = {
+  buffer: Buffer
+  mimeType: string
+  fileExtension: string
+  width: number | null
+  height: number | null
 }
 
 function sanitizeStorageName(rawName: string): string {
@@ -75,6 +82,12 @@ function resolveMimeType(file: File, buffer: Buffer): string {
   throw new Error("Unsupported image format. Use JPEG, PNG, or WebP.")
 }
 
+function extensionForMime(mimeType: string): string {
+  if (mimeType === "image/png") return "png"
+  if (mimeType === "image/webp") return "webp"
+  return "jpg"
+}
+
 function toErrorMessage(err: unknown): string {
   if (err instanceof Error) return err.message
   if (
@@ -88,19 +101,36 @@ function toErrorMessage(err: unknown): string {
   return "Failed to save image"
 }
 
-async function compressImage(
-  file: File,
-): Promise<{ buffer: Buffer; width: number; height: number }> {
+async function prepareImage(file: File): Promise<PreparedImage> {
   const inputBuffer = Buffer.from(await file.arrayBuffer())
-  resolveMimeType(file, inputBuffer)
+  const sourceMime = resolveMimeType(file, inputBuffer)
 
-  const { data, info } = await sharp(inputBuffer)
-    .rotate()
-    .resize(MAX_DIMENSION, MAX_DIMENSION, { fit: "inside", withoutEnlargement: true })
-    .webp({ quality: WEBP_QUALITY })
-    .toBuffer({ resolveWithObject: true })
+  try {
+    const sharp = (await import("sharp")).default
+    const { data, info } = await sharp(inputBuffer)
+      .rotate()
+      .resize(MAX_DIMENSION, MAX_DIMENSION, { fit: "inside", withoutEnlargement: true })
+      .webp({ quality: WEBP_QUALITY })
+      .toBuffer({ resolveWithObject: true })
 
-  return { buffer: data, width: info.width, height: info.height }
+    return {
+      buffer: data,
+      mimeType: "image/webp",
+      fileExtension: "webp",
+      width: info.width,
+      height: info.height,
+    }
+  } catch (sharpError) {
+    console.error("[createImageItem] sharp unavailable, storing original bytes", sharpError)
+
+    return {
+      buffer: inputBuffer,
+      mimeType: sourceMime,
+      fileExtension: extensionForMime(sourceMime),
+      width: null,
+      height: null,
+    }
+  }
 }
 
 export async function createImageItem({
@@ -116,14 +146,14 @@ export async function createImageItem({
   supabase: SupabaseClient
   user: User
 }): Promise<CreateImageItemResult> {
-  const { buffer, width, height } = await compressImage(file)
+  const prepared = await prepareImage(file)
 
-  const safeName = sanitizeStorageName(file.name || "image.webp")
-  const fileName = `${user.id}/${Date.now()}-${safeName}.webp`
+  const safeName = sanitizeStorageName(file.name || "image")
+  const fileName = `${user.id}/${Date.now()}-${safeName}.${prepared.fileExtension}`
 
   const { error: uploadError } = await supabase.storage
     .from("images")
-    .upload(fileName, buffer, { contentType: "image/webp" })
+    .upload(fileName, prepared.buffer, { contentType: prepared.mimeType })
 
   if (uploadError) {
     throw new Error(uploadError.message)
@@ -141,10 +171,10 @@ export async function createImageItem({
       user_id: user.id,
       type: "image",
       file_url: publicUrl,
-      file_size: buffer.length,
-      mime_type: "image/webp",
-      width,
-      height,
+      file_size: prepared.buffer.length,
+      mime_type: prepared.mimeType,
+      width: prepared.width,
+      height: prepared.height,
       title: resolvedTitle,
       notes: null,
     })
