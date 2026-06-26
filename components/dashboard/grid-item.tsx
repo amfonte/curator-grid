@@ -173,6 +173,10 @@ export function GridItem({
       capWidth != null && capHeight != null
         ? { maxWidth: `${capWidth}px`, maxHeight: `${capHeight}px` }
         : undefined
+    const previewImageStyle =
+      capWidth != null && capHeight != null
+        ? { maxWidth: `min(70vw, ${capWidth}px)`, maxHeight: `${capHeight}px` }
+        : { maxWidth: "70vw" }
 
     return (
       <div
@@ -288,7 +292,7 @@ export function GridItem({
             <DialogOverlay />
             <DialogPrimitive.Content
               className={cn(
-                "fixed z-50 flex h-[calc(100vh-48px)] max-w-[calc(100vw-48px)] flex-col gap-4 overflow-hidden rounded-[24px] bg-card shadow-lg",
+                "fixed z-50 flex h-[calc(100vh-48px)] w-fit flex-col items-start gap-4 overflow-hidden rounded-[24px] bg-card shadow-lg",
                 "top-[24px] right-[24px] bottom-[24px]",
                 "max-[767px]:left-0 max-[767px]:right-0 max-[767px]:top-auto max-[767px]:bottom-0",
                 "max-[767px]:h-[90vh] max-[767px]:w-screen max-[767px]:max-w-none",
@@ -299,7 +303,7 @@ export function GridItem({
                 "max-[767px]:data-[state=open]:slide-in-from-bottom-full max-[767px]:data-[state=closed]:slide-out-to-bottom-full",
               )}
             >
-              <div className="flex flex-shrink-0 items-start justify-between">
+              <div className="flex w-full flex-shrink-0 items-start justify-between">
                 <DialogPrimitive.Title className="text-lg font-medium leading-7 text-foreground">
                   {item.title || "Image preview"}
                 </DialogPrimitive.Title>
@@ -311,18 +315,22 @@ export function GridItem({
                 </DialogPrimitive.Close>
               </div>
 
-              <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-                {/*
-                  In the preview panel, always fit the image to the panel width
-                  to avoid horizontal scrolling, while still respecting the
-                  no-upscale cap from the measured/native size.
-                */}
+              <div className="min-h-0 w-full flex-1 overflow-auto">
                 <img
                   src={item.file_url || ""}
                   alt={item.title || "Uploaded image"}
-                  className="mx-auto h-auto max-h-full max-w-full"
-                  style={imageStyle}
+                  className="mx-auto block h-auto w-auto"
+                  style={previewImageStyle}
                   decoding="async"
+                  onLoad={
+                    !hasNativeSize
+                      ? (e) => {
+                          const img = e.currentTarget
+                          if (img.naturalWidth > 0 && img.naturalHeight > 0)
+                            setMeasuredImageSize({ width: img.naturalWidth, height: img.naturalHeight })
+                        }
+                      : undefined
+                  }
                 />
               </div>
             </DialogPrimitive.Content>
