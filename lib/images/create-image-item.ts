@@ -28,10 +28,72 @@ function titleFromFilename(filename: string): string {
   return base || "Image"
 }
 
+function detectMimeType(buffer: Buffer, filename: string): string | null {
+  if (
+    buffer.length >= 3 &&
+    buffer[0] === 0xff &&
+    buffer[1] === 0xd8 &&
+    buffer[2] === 0xff
+  ) {
+    return "image/jpeg"
+  }
+
+  if (
+    buffer.length >= 8 &&
+    buffer[0] === 0x89 &&
+    buffer[1] === 0x50 &&
+    buffer[2] === 0x4e &&
+    buffer[3] === 0x47
+  ) {
+    return "image/png"
+  }
+
+  if (
+    buffer.length >= 12 &&
+    buffer.toString("ascii", 0, 4) === "RIFF" &&
+    buffer.toString("ascii", 8, 12) === "WEBP"
+  ) {
+    return "image/webp"
+  }
+
+  const lower = filename.toLowerCase()
+  if (lower.endsWith(".png")) return "image/png"
+  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg"
+  if (lower.endsWith(".webp")) return "image/webp"
+
+  return null
+}
+
+function resolveMimeType(file: File, buffer: Buffer): string {
+  if (file.type && ALLOWED_MIME_TYPES.has(file.type)) {
+    return file.type
+  }
+
+  const detected = detectMimeType(buffer, file.name || "")
+  if (detected) return detected
+
+  throw new Error("Unsupported image format. Use JPEG, PNG, or WebP.")
+}
+
+function toErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message
+  if (
+    typeof err === "object" &&
+    err !== null &&
+    "message" in err &&
+    typeof (err as { message: unknown }).message === "string"
+  ) {
+    return (err as { message: string }).message
+  }
+  return "Failed to save image"
+}
+
 async function compressImage(
   file: File,
 ): Promise<{ buffer: Buffer; width: number; height: number }> {
   const inputBuffer = Buffer.from(await file.arrayBuffer())
+  resolveMimeType(file, inputBuffer)
+
   const { data, info } = await sharp(inputBuffer)
     .rotate()
     .resize(MAX_DIMENSION, MAX_DIMENSION, { fit: "inside", withoutEnlargement: true })
@@ -54,10 +116,6 @@ export async function createImageItem({
   supabase: SupabaseClient
   user: User
 }): Promise<CreateImageItemResult> {
-  if (!ALLOWED_MIME_TYPES.has(file.type)) {
-    throw new Error("Unsupported image format. Use JPEG, PNG, or WebP.")
-  }
-
   const { buffer, width, height } = await compressImage(file)
 
   const safeName = sanitizeStorageName(file.name || "image.webp")
@@ -67,7 +125,9 @@ export async function createImageItem({
     .from("images")
     .upload(fileName, buffer, { contentType: "image/webp" })
 
-  if (uploadError) throw uploadError
+  if (uploadError) {
+    throw new Error(uploadError.message)
+  }
 
   const {
     data: { publicUrl },
@@ -91,15 +151,21 @@ export async function createImageItem({
     .select("id, type, file_url, title")
     .single()
 
-  if (insertError) throw insertError
+  if (insertError) {
+    throw new Error(insertError.message)
+  }
 
   if (boardId) {
     const { error: linkError } = await supabase.from("item_boards").insert({
       item_id: item.id,
       board_id: boardId,
     })
-    if (linkError) throw linkError
+    if (linkError) {
+      throw new Error(linkError.message)
+    }
   }
 
   return item
 }
+
+export { toErrorMessage }

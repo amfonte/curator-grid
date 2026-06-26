@@ -15,6 +15,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+  serverExternalPackages: ['sharp'],
   images: {
     unoptimized: true,
     remotePatterns: [

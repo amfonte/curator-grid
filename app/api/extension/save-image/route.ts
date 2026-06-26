@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { extensionUnauthorized, getExtensionAuth } from "@/lib/extension/auth"
-import { createImageItem } from "@/lib/images/create-image-item"
+import { createImageItem, toErrorMessage } from "@/lib/images/create-image-item"
+
+export const maxDuration = 60
 
 export async function POST(request: Request) {
   const auth = await getExtensionAuth(request)
@@ -54,7 +56,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ item })
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to save image"
+    const message = toErrorMessage(err)
+    console.error("[extension/save-image]", message, err)
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
