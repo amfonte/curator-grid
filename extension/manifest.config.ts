@@ -5,7 +5,7 @@ const curatorApiUrl = process.env.VITE_CURATOR_API_URL ?? "http://127.0.0.1:3000
 export default defineManifest({
   manifest_version: 3,
   name: "Curator",
-  version: "1.0.0",
+  version: "1.0.1",
   description: "Save inspiration from any webpage to your Curator boards.",
   icons: {
     "16": "icons/icon16.png",

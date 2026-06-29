@@ -8,6 +8,8 @@ import {
   setStoredSession,
   type StoredSession,
 } from "./session"
+import { clearSessionSource, setSessionSource } from "./session-source"
+import { clearCachedBoards } from "./boards-cache"
 
 function createChromeStorageAdapter() {
   return {
@@ -105,7 +107,14 @@ export async function signInWithPassword(
 
   const session = sessionFromSupabase(data.session)
   await setStoredSession(session)
+  await setSessionSource("native")
   return { session }
+}
+
+export async function signOutExtension(): Promise<void> {
+  await clearStoredSession()
+  await clearSessionSource()
+  await clearCachedBoards()
 }
 
 export async function persistSessionFromRaw(rawSessionJson: string): Promise<StoredSession | null> {

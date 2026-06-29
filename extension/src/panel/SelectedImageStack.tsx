@@ -1,5 +1,6 @@
 import { motion, useMotionValue, useSpring, useTransform } from "motion/react"
 import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from "react"
+import { IMAGE_BORDER_RADIUS_PX } from "../lib/pick-border"
 import type { SelectedImage } from "../lib/pick-mode"
 import { IMAGE_STACK_HEIGHT_PX, stackZIndex } from "../lib/image-stack"
 import {
@@ -228,6 +229,8 @@ function StackImage({ image, containerWidth, onRemove }: StackImageProps) {
             width: displaySize.width,
             height: displaySize.height,
             boxShadow: CARD_SHADOW,
+            borderRadius: IMAGE_BORDER_RADIUS_PX,
+            overflow: "hidden",
           }}
           onPointerEnter={handlePointerEnter}
           onPointerLeave={handlePointerLeave}

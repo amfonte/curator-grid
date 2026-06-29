@@ -6,6 +6,7 @@ import {
   SelectValue,
 } from "../components/ui/select"
 import type { ExtensionBoard } from "../lib/messaging"
+import { IMAGE_BORDER_RADIUS_PX } from "../lib/pick-border"
 import type { SelectedImage } from "../lib/pick-mode"
 import { EmptyCanvasBorder } from "./EmptyCanvasBorder"
 import { FormField } from "./FormField"
@@ -46,7 +47,7 @@ export function ImageTabShell({
         className="relative flex flex-col items-center justify-center gap-4 rounded-lg bg-card px-8 text-center"
         style={{ height: TAB_CONTENT_HEIGHT_PX }}
       >
-        <EmptyCanvasBorder borderRadius={7} />
+        <EmptyCanvasBorder borderRadius={IMAGE_BORDER_RADIUS_PX} />
         <div className="relative z-[1] flex flex-col items-center">
           <p className="text-base font-normal leading-6 text-foreground">
             Select images and they will populate here.

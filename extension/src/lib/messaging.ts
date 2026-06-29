@@ -18,6 +18,7 @@ export type BackgroundRequest =
   | { type: "GET_CURATOR_TAB_AUTH" }
   | { type: "CONNECT_FROM_TAB" }
   | { type: "SIGN_IN"; email: string; password: string }
+  | { type: "SIGN_OUT" }
   | { type: "GET_BOARDS" }
   | { type: "GET_TAB_URL" }
   | {
@@ -34,6 +35,7 @@ export type BackgroundRequest =
       sourceName?: string
     }
   | { type: "OPEN_CURATOR_SIGNED_IN"; path: string }
+  | { type: "MARK_CURATOR_PAGE_INSTALLED" }
 
 export type AuthState =
   | { status: "authenticated"; session: StoredSession }
@@ -44,11 +46,13 @@ export type BackgroundResponseMap = {
   GET_CURATOR_TAB_AUTH: { state: "logged-in" | "logged-out" | null }
   CONNECT_FROM_TAB: { connected: boolean; session?: StoredSession }
   SIGN_IN: { session: StoredSession }
+  SIGN_OUT: { signedOut: true }
   GET_BOARDS: { boards: ExtensionBoard[] }
   GET_TAB_URL: { url: string; title: string }
   SAVE_URL: { item: SavedUrlItem }
   SAVE_IMAGE: { item: SavedImageItem }
   OPEN_CURATOR_SIGNED_IN: { opened: true }
+  MARK_CURATOR_PAGE_INSTALLED: { marked: true }
 }
 
 export function sendBackgroundMessage<T extends BackgroundRequest["type"]>(

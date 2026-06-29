@@ -41,7 +41,7 @@ export function SaveSuccessView({
   }
 
   return (
-    <div className="flex w-full flex-col items-center gap-5">
+    <div className="flex w-full flex-col items-center gap-8">
       <p className="text-center text-lg font-medium leading-7 text-foreground">
         {formatSuccessMessage(saveType, boardName, imageCount)}
       </p>

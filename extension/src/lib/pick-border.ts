@@ -5,7 +5,9 @@ export const PICK_BORDER_DASH_PERIOD = PICK_BORDER_DASH_LENGTH + PICK_BORDER_GAP
 
 /** Inset between image edge and dashed border (Figma 395:1068 img placeholder). */
 export const PICK_BORDER_INSET_PX = 8
-export const PICK_BORDER_RADIUS_PX = 8
+/** Corner radius for stacked/selected images and matching pick overlays. */
+export const IMAGE_BORDER_RADIUS_PX = 4
+export const PICK_BORDER_RADIUS_PX = IMAGE_BORDER_RADIUS_PX
 
 /** Gap between dashed pick border and badge outer edge. */
 export const PICK_BADGE_BORDER_GAP_PX = 16

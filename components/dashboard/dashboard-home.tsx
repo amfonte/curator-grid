@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import { getRandomQuote, getRandomQuoteOtherThan } from "@/lib/quotes"
 import { CreateCollectionFolder } from "@/components/dashboard/create-collection-folder"
+import { ExtensionPromoToast } from "@/components/dashboard/extension-promo-toast"
 import { ScaledFolderFrame } from "@/components/dashboard/scaled-folder-frame"
 import { parseFolderAppearance } from "@/lib/folder-customization"
 
@@ -513,6 +514,8 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
           </div>
         )}
       </main>
+
+      <ExtensionPromoToast />
     </div>
   )
 }

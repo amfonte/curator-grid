@@ -556,6 +556,81 @@
   animation: poof 320ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
+/* Extension promo toast — fade in and rise after page load */
+@keyframes extension-promo-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.extension-promo-toast {
+  opacity: 0;
+  transform: translateY(16px);
+}
+
+.extension-promo-toast-revealed {
+  animation: extension-promo-toast-in 450ms cubic-bezier(0.33, 1, 0.68, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.extension-promo-toast.extension-promo-toast-poofing {
+  animation: extension-promo-toast-poof 320ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+  will-change: transform, opacity, filter;
+}
+
+@keyframes extension-promo-toast-poof {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    transform: scale(1.05);
+    opacity: 0;
+    filter: blur(6px);
+  }
+}
+
+.extension-promo-toast-dismiss {
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition:
+    opacity 150ms ease-out,
+    transform 150ms ease-out;
+}
+
+.extension-promo-toast-dismiss-visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  transition:
+    opacity 200ms ease-out,
+    transform 200ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .extension-promo-toast-revealed {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .extension-promo-toast-dismiss {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+}
+
 /* Customize collection — outer stroke ring when a preset / custom / draw control activates (matches 200ms ease-out hover) */
 @keyframes curator-swatch-stroke-activate {
   from {

@@ -2,11 +2,10 @@ import { useCallback, useEffect, useState } from "react"
 import { fetchUrlMetadata } from "../lib/api"
 import {
   bootstrapSkeletonFromBoards,
-  canHydrateFromHint,
   type BootstrapHint,
 } from "../lib/bootstrap-hint"
 import { isAuthFailureMessage } from "../lib/auth-errors"
-import { getCachedHasCollections, hasSelectableCollections, setCachedBoards, clearCachedBoards } from "../lib/boards-cache"
+import { hasSelectableCollections, setCachedBoards, clearCachedBoards } from "../lib/boards-cache"
 import {
   clearImageSelection,
   removeImageFromSelection,
@@ -43,17 +42,16 @@ type TabSuccessState = {
 type PanelAppProps = {
   onClose: () => void
   initialHint: BootstrapHint
-  onRegisterReopen?: (handler: () => void) => void
 }
 
-export function PanelApp({ onClose, initialHint, onRegisterReopen }: PanelAppProps) {
-  const canHydrate = canHydrateFromHint(initialHint)
-
+export function PanelApp({ onClose, initialHint }: PanelAppProps) {
   const [view, setView] = useState<PanelView>(
     initialHint.skeleton === "auth" ? "auth" : "main",
   )
-  const [isBootstrapping, setIsBootstrapping] = useState(!canHydrate)
-  const [bootstrapSkeleton, setBootstrapSkeleton] = useState(initialHint.skeleton)
+  const [isBootstrapping, setIsBootstrapping] = useState(true)
+  const [bootstrapSkeleton, setBootstrapSkeleton] = useState(
+    initialHint.skeleton === "no-collections" ? "main" : initialHint.skeleton,
+  )
   const [activeTab, setActiveTab] = useState<PanelTab>("url")
   const [boards, setBoards] = useState<ExtensionBoard[]>(initialHint.cachedBoards ?? [])
   const [tabUrl, setTabUrl] = useState("")
@@ -70,7 +68,6 @@ export function PanelApp({ onClose, initialHint, onRegisterReopen }: PanelAppPro
   )
   const [successByTab, setSuccessByTab] = useState<Partial<Record<PanelTab, TabSuccessState>>>({})
   const [boardsError, setBoardsError] = useState<string | null>(null)
-  const [reopenTick, setReopenTick] = useState(0)
 
   const loadBoards = useCallback(async (): Promise<
     { ok: true; boards: ExtensionBoard[] } | { ok: false; error: string }
@@ -103,11 +100,14 @@ export function PanelApp({ onClose, initialHint, onRegisterReopen }: PanelAppPro
     setBootstrapSkeleton("auth")
     setIsBootstrapping(false)
     setView("auth")
+    setSaveError(null)
+    setSuccessByTab({})
   }, [])
 
   const handleAuthFailure = useCallback(
-    (error: string): boolean => {
+    async (error: string): Promise<boolean> => {
       if (!isAuthFailureMessage(error)) return false
+      await sendBackgroundMessage({ type: "SIGN_OUT" })
       showAuthView()
       return true
     },
@@ -120,8 +120,8 @@ export function PanelApp({ onClose, initialHint, onRegisterReopen }: PanelAppPro
     const [boardsResult] = await Promise.all([loadBoards(), loadTabInfo()])
     if (boardsResult.ok) {
       setBootstrapSkeleton(bootstrapSkeletonFromBoards(boardsResult.boards))
-    } else if (handleAuthFailure(boardsResult.error)) {
-      return boardsResult
+    } else {
+      await handleAuthFailure(boardsResult.error)
     }
     return boardsResult
   }, [handleAuthFailure, loadBoards, loadTabInfo])
@@ -150,22 +150,12 @@ export function PanelApp({ onClose, initialHint, onRegisterReopen }: PanelAppPro
           setSaveError(null)
           setSuccessByTab({})
           setBoardsError(null)
-
-          const cached = await getCachedHasCollections()
-          if (cached === false) {
-            setBootstrapSkeleton("no-collections")
-          } else if (cached === true) {
-            setBootstrapSkeleton("main")
-          }
+          setBootstrapSkeleton("main")
         }
 
-        const boardsResult = await refreshMainData()
+        await refreshMainData()
         if (withSkeleton) {
           setIsBootstrapping(false)
-        }
-
-        if (!boardsResult.ok) {
-          handleAuthFailure(boardsResult.error)
         }
         return
       }
@@ -179,15 +169,12 @@ export function PanelApp({ onClose, initialHint, onRegisterReopen }: PanelAppPro
           setSaveError(null)
           setSuccessByTab({})
           setBoardsError(null)
+          setBootstrapSkeleton("main")
         }
 
-        const boardsResult = await refreshMainData()
+        await refreshMainData()
         if (withSkeleton) {
           setIsBootstrapping(false)
-        }
-
-        if (!boardsResult.ok) {
-          handleAuthFailure(boardsResult.error)
         }
         return
       }
@@ -204,37 +191,15 @@ export function PanelApp({ onClose, initialHint, onRegisterReopen }: PanelAppPro
     setSaveError(null)
     setSuccessByTab({})
     setBoardsError(null)
+    setBootstrapSkeleton("main")
 
-    const cached = await getCachedHasCollections()
-    if (cached === false) {
-      setBootstrapSkeleton("no-collections")
-    } else if (cached === true) {
-      setBootstrapSkeleton("main")
-    }
-
-    const boardsResult = await refreshMainData()
+    await refreshMainData()
     setIsBootstrapping(false)
-
-    if (!boardsResult.ok) {
-      handleAuthFailure(boardsResult.error)
-    }
-  }, [handleAuthFailure, refreshMainData])
+  }, [refreshMainData])
 
   useEffect(() => {
-    if (canHydrate) {
-      void loadTabInfo()
-    }
-    void bootstrap(!canHydrate)
-  }, [bootstrap, canHydrate, loadTabInfo])
-
-  useEffect(() => {
-    onRegisterReopen?.(() => {
-      setSuccessByTab({})
-      setSaveError(null)
-      setReopenTick((tick) => tick + 1)
-      void bootstrap(false)
-    })
-  }, [bootstrap, onRegisterReopen])
+    void bootstrap(true)
+  }, [bootstrap])
 
   useEffect(() => {
     return subscribeToImageSelection((images) => {
@@ -255,7 +220,7 @@ export function PanelApp({ onClose, initialHint, onRegisterReopen }: PanelAppPro
     }
 
     stopPickMode()
-  }, [activeTab, isBootstrapping, reopenTick, saving, view])
+  }, [activeTab, isBootstrapping, saving, view])
 
   useEffect(() => {
     if (!isSaveableTabUrl(tabUrl)) {
@@ -298,7 +263,7 @@ export function PanelApp({ onClose, initialHint, onRegisterReopen }: PanelAppPro
     setIsBootstrapping(false)
 
     if (!boardsResult.ok) {
-      if (handleAuthFailure(boardsResult.error)) {
+      if (await handleAuthFailure(boardsResult.error)) {
         setAuthError("Sign in succeeded but your session could not be verified. Please try again.")
       }
     }
@@ -321,6 +286,7 @@ export function PanelApp({ onClose, initialHint, onRegisterReopen }: PanelAppPro
     setSaving(false)
 
     if (!response.ok) {
+      if (await handleAuthFailure(response.error)) return
       setSaveError(response.error)
       return
     }
@@ -369,7 +335,9 @@ export function PanelApp({ onClose, initialHint, onRegisterReopen }: PanelAppPro
     setImageSaveProgress(null)
 
     if (savedCount === 0) {
-      setSaveError(failures[0] ?? "Failed to save images")
+      const firstError = failures[0] ?? "Failed to save images"
+      if (await handleAuthFailure(firstError)) return
+      setSaveError(firstError)
       return
     }
 

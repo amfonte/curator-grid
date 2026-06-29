@@ -1,4 +1,4 @@
-import { clearCachedBoards, getCachedBoards, getCachedHasCollections, setCachedBoards } from "./boards-cache"
+import { clearCachedBoards, getCachedBoards, setCachedBoards } from "./boards-cache"
 import { sendBackgroundMessage, type ExtensionBoard } from "./messaging"
 
 export type BootstrapSkeleton = "auth" | "main" | "no-collections"
@@ -6,10 +6,6 @@ export type BootstrapSkeleton = "auth" | "main" | "no-collections"
 export type BootstrapHint = {
   skeleton: BootstrapSkeleton
   cachedBoards: ExtensionBoard[] | null
-}
-
-export function canHydrateFromHint(hint: BootstrapHint): boolean {
-  return hint.skeleton !== "auth" && hint.cachedBoards !== null
 }
 
 export function bootstrapSkeletonFromBoards(
@@ -28,10 +24,7 @@ export async function resolveBootstrapHint(): Promise<BootstrapHint> {
     return { skeleton: "auth", cachedBoards: null }
   }
 
-  const [cachedBoards, cachedCollections] = await Promise.all([
-    getCachedBoards(),
-    getCachedHasCollections(),
-  ])
+  const cachedBoards = await getCachedBoards()
 
   const isAuthenticated =
     authResponse.ok && authResponse.data.status === "authenticated"
@@ -43,20 +36,17 @@ export async function resolveBootstrapHint(): Promise<BootstrapHint> {
     return { skeleton: "auth", cachedBoards: null }
   }
 
-  if (cachedCollections === false) {
-    return { skeleton: "no-collections", cachedBoards }
-  }
-
-  if (cachedCollections === true) {
+  // Always show the main save skeleton while loading — never flash "no collections"
+  // from stale cache before fresh boards arrive.
+  if (cachedBoards !== null) {
     return { skeleton: "main", cachedBoards }
   }
 
-  // Authenticated but no cached boards — fetch once so skeleton matches account state.
   const boardsResponse = await sendBackgroundMessage({ type: "GET_BOARDS" })
   if (boardsResponse.ok) {
     await setCachedBoards(boardsResponse.data.boards)
     return {
-      skeleton: bootstrapSkeletonFromBoards(boardsResponse.data.boards),
+      skeleton: "main",
       cachedBoards: boardsResponse.data.boards,
     }
   }

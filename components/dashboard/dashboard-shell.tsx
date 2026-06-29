@@ -14,7 +14,12 @@ import { EmptyCanvasBorder } from "@/components/dashboard/empty-canvas-border"
 import { CustomizeCollectionDialog } from "@/components/dashboard/customize-collection-dialog"
 import { CustomizeCollectionIcon } from "@/components/icons/customize-collection-icon"
 import { BulkBar } from "@/components/dashboard/bulk-bar"
+import { ExtensionPromoToast } from "@/components/dashboard/extension-promo-toast"
 import { SizeSlider } from "@/components/dashboard/size-slider"
+import {
+  DASHBOARD_FLOATING_CONTROLS_BOTTOM_TRANSITION,
+  dashboardFloatingControlsBottomPx,
+} from "@/lib/dashboard/floating-controls"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
@@ -873,6 +878,13 @@ export function DashboardShell({
         </div>
       )}
 
+      <ExtensionPromoToast
+        bottom={dashboardFloatingControlsBottomPx(
+          selectedIds.size > 0,
+          bulkBarExiting,
+        )}
+      />
+
       {boardId && (
         <div
           className="pointer-events-none fixed inset-x-0 z-20 flex justify-center"
@@ -883,10 +895,13 @@ export function DashboardShell({
                   ? 144
                   : 108
                 : 32,
-            transition: "bottom 0.35s cubic-bezier(0.33, 1, 0.68, 1)",
+            transition: DASHBOARD_FLOATING_CONTROLS_BOTTOM_TRANSITION,
           }}
         >
-          <div className="pointer-events-auto flex items-center gap-6">
+          <div
+            className="pointer-events-auto flex items-center gap-6"
+            data-dashboard-floating-controls
+          >
             <SizeSlider
               value={columns}
               onValueChange={handleColumnsChange}

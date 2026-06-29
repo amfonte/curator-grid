@@ -1,5 +1,6 @@
 import {
   signInWithPassword,
+  signOutExtension,
   validateStoredSession,
 } from "../lib/auth"
 import { fetchBoards, saveImage, saveUrl } from "../lib/api"
@@ -11,7 +12,12 @@ import {
   getOpenCuratorTabAuthState,
 } from "../lib/read-curator-session"
 import { getStoredSession } from "../lib/session"
+import { getSessionSource, setSessionSource } from "../lib/session-source"
 import { writeSessionToCuratorCookies } from "../lib/write-curator-session"
+import {
+  markAllOpenCuratorTabsInstalled,
+  markCuratorTabInstalled,
+} from "../lib/mark-curator-page-installed"
 import type {
   AuthState,
   BackgroundRequest,
@@ -25,7 +31,16 @@ async function getAuthState(): Promise<AuthState> {
   if (openCuratorAuth === "logged-in") {
     const cookieSession = await connectSessionFromCuratorCookies()
     if (cookieSession) {
+      await setSessionSource("curator-tab")
       return { status: "authenticated", session: cookieSession }
+    }
+  }
+
+  if (openCuratorAuth === "logged-out") {
+    const source = await getSessionSource()
+    if (source === "curator-tab") {
+      await signOutExtension()
+      return { status: "unauthenticated" }
     }
   }
 
@@ -62,7 +77,7 @@ function failure(error: string): MessageResponse<never> {
   return { ok: false, error }
 }
 
-chrome.runtime.onMessage.addListener((message: BackgroundRequest, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message: BackgroundRequest, sender, sendResponse) => {
   void (async () => {
     try {
       switch (message.type) {
@@ -85,6 +100,11 @@ chrome.runtime.onMessage.addListener((message: BackgroundRequest, _sender, sendR
           } else {
             sendResponse(success({ session: result.session }))
           }
+          break
+        }
+        case "SIGN_OUT": {
+          await signOutExtension()
+          sendResponse(success({ signedOut: true }))
           break
         }
         case "GET_BOARDS": {
@@ -141,6 +161,14 @@ chrome.runtime.onMessage.addListener((message: BackgroundRequest, _sender, sendR
           sendResponse(success({ opened: true }))
           break
         }
+        case "MARK_CURATOR_PAGE_INSTALLED": {
+          const tabId = sender.tab?.id
+          if (tabId != null && sender.tab.url && isCuratorOrigin(sender.tab.url)) {
+            await markCuratorTabInstalled(tabId)
+          }
+          sendResponse(success({ marked: true }))
+          break
+        }
         default:
           sendResponse(failure("Unknown message type"))
       }
@@ -150,6 +178,10 @@ chrome.runtime.onMessage.addListener((message: BackgroundRequest, _sender, sendR
   })()
 
   return true
+})
+
+chrome.runtime.onInstalled.addListener(() => {
+  void markAllOpenCuratorTabsInstalled()
 })
 
 chrome.action.onClicked.addListener(async (tab) => {

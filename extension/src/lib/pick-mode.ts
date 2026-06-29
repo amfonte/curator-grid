@@ -12,52 +12,40 @@ import {
 } from "./image-stack"
 import {
   buildPickBorderPath,
+  PICK_BADGE_BORDER_GAP_PX,
+  PICK_BORDER_DASH_LENGTH,
   PICK_BORDER_DASH_PERIOD,
   PICK_BORDER_GAP_LENGTH,
   PICK_BORDER_INSET_PX,
   PICK_BORDER_RADIUS_PX,
-  PICK_BORDER_DASH_LENGTH,
-  PICK_BADGE_BORDER_GAP_PX,
 } from "./pick-border"
 
 export type SelectedImage = {
   url: string
   filename: string
-  /** Intrinsic pixels from the picked <img> (used for immediate stack sizing). */
   naturalWidth: number
   naturalHeight: number
-  /** Stable stack order assigned when the image is first selected. */
   stackLayer: number
-  /** Random tilt assigned when the image is first selected (-3.5° to 3.5°). */
   stackRotate: number
-  /** Post-drop settle drift in px (assigned at pick). */
   stackEntranceDriftX: number
   stackEntranceDriftY: number
-  /** Scale: 1.0 for the first image in the stack, then random (0.8–1.0). */
   stackScale: number
 }
 
 const PICK_STYLE_ID = "curator-extension-pick-styles"
-const WRAP_CLASS = "curator-ext-pick-wrap"
+const EXTENSION_HOST_ID = "curator-extension-host"
 const PICKABLE_CLASS = "curator-ext-pickable"
-const HOVER_CLASS = "curator-ext-pick-hover"
 const SELECTED_CLASS = "curator-ext-selected"
 
 const CURATOR_ICON_PATH =
   "M15.2998 0C19.2763 0 22.5 3.22368 22.5 7.2002V9.30096C22.5 9.96371 21.9627 10.501 21.3 10.501H16.4998C15.8371 10.501 15.2998 9.96371 15.2998 9.30096V6.60059C15.2998 6.26921 15.0316 6.00098 14.7002 6.00098H9.2998C8.96858 6.00116 8.7002 6.26932 8.7002 6.60059V17.3486C8.70026 17.8522 9.28317 18.1317 9.67578 17.8164L11.624 16.25C11.8435 16.0736 12.1564 16.0737 12.376 16.25L14.3242 17.8164C14.7168 18.132 15.2997 17.8523 15.2998 17.3486V14.701C15.2998 14.0382 15.8371 13.501 16.4998 13.501H21.3C21.9627 13.501 22.5 14.0382 22.5 14.701V16.7998C22.5 20.7763 19.2763 24 15.2998 24H8.7002C4.72368 24 1.5 20.7763 1.5 16.7998V7.2002C1.5 3.22368 4.72368 0 8.7002 0H15.2998Z"
 
 const pickStyles = `
-  .${WRAP_CLASS} {
-    position: relative;
-    display: inline-block;
-    line-height: 0;
-    vertical-align: top;
-    max-width: 100%;
-    isolation: isolate;
-  }
-  .${WRAP_CLASS} > img.${PICKABLE_CLASS} {
-    display: block;
-    max-width: 100%;
+  .curator-ext-pick-overlay {
+    position: absolute;
+    pointer-events: none;
+    box-sizing: border-box;
+    overflow: visible;
   }
   .curator-ext-pick-border-svg {
     position: absolute;
@@ -65,7 +53,6 @@ const pickStyles = `
     width: calc(100% - ${PICK_BORDER_INSET_PX * 2}px);
     height: calc(100% - ${PICK_BORDER_INSET_PX * 2}px);
     pointer-events: none;
-    z-index: 2;
     overflow: visible;
     display: none;
     mix-blend-mode: difference;
@@ -102,7 +89,6 @@ const pickStyles = `
     align-items: center;
     justify-content: center;
     pointer-events: none;
-    z-index: 3;
     filter: none !important;
     mix-blend-mode: normal !important;
     opacity: 1 !important;
@@ -139,25 +125,31 @@ type SelectionListener = (selection: SelectedImage[]) => void
 
 type ImageOverlay = {
   img: HTMLImageElement
-  wrapper: HTMLDivElement
+  root: HTMLDivElement
   borderSvg: SVGSVGElement
   path: SVGPathElement
   badge: HTMLDivElement
 }
 
+type SelectedEntry = {
+  img: HTMLImageElement
+}
+
 let active = false
-let observer: MutationObserver | null = null
-let trackedImages = new Set<HTMLImageElement>()
-const overlays = new Map<HTMLImageElement, ImageOverlay>()
-const hoveredImages = new Set<HTMLImageElement>()
+let hoveredImg: HTMLImageElement | null = null
 const selectedByUrl = new Map<string, SelectedImage>()
+const selectedEntries = new Map<string, SelectedEntry>()
+const overlays = new Map<HTMLImageElement, ImageOverlay>()
 const listeners = new Set<SelectionListener>()
 let nextStackLayer = 0
+let pointerRaf = 0
+let syncRaf = 0
+let lastPointerX = 0
+let lastPointerY = 0
 
 function notifyListeners() {
-  const selection = Array.from(selectedByUrl.values())
   for (const listener of listeners) {
-    listener(selection)
+    listener(Array.from(selectedByUrl.values()))
   }
 }
 
@@ -173,13 +165,38 @@ function removeStyles() {
   document.getElementById(PICK_STYLE_ID)?.remove()
 }
 
+function isCuratorUiElement(element: Element): boolean {
+  const root = element.getRootNode()
+  if (root instanceof ShadowRoot && root.host.id === EXTENSION_HOST_ID) {
+    return true
+  }
+
+  return element.closest(`#${EXTENSION_HOST_ID}`) != null
+}
+
+function isPointerOverCuratorUi(x: number, y: number): boolean {
+  const host = document.getElementById(EXTENSION_HOST_ID)
+  if (!host || host.style.display === "none") return false
+
+  for (const node of document.elementsFromPoint(x, y)) {
+    if (node instanceof Element && isCuratorUiElement(node)) {
+      return true
+    }
+  }
+  return false
+}
+
 function isImageSelected(img: HTMLImageElement): boolean {
   const url = resolveImageUrl(img)
   return url != null && selectedByUrl.has(url)
 }
 
+function pointInRect(x: number, y: number, rect: DOMRect): boolean {
+  return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom
+}
+
 function shouldShowOverlay(img: HTMLImageElement): boolean {
-  return hoveredImages.has(img) || isImageSelected(img)
+  return hoveredImg === img || isImageSelected(img)
 }
 
 function syncOverlayState(img: HTMLImageElement) {
@@ -187,56 +204,38 @@ function syncOverlayState(img: HTMLImageElement) {
   if (!overlay) return
 
   const visible = shouldShowOverlay(img)
-  const hovered = visible && hoveredImages.has(img)
-
+  const hovered = visible && hoveredImg === img
   overlay.borderSvg.classList.toggle("is-visible", visible)
   overlay.borderSvg.classList.toggle("is-hovered", hovered)
   overlay.badge.classList.toggle("is-visible", visible)
 }
 
 function updateOverlayGeometry(overlay: ImageOverlay) {
-  const { img, borderSvg, path } = overlay
-  const width = img.clientWidth - PICK_BORDER_INSET_PX * 2
-  const height = img.clientHeight - PICK_BORDER_INSET_PX * 2
+  const { img, root, borderSvg, path } = overlay
+  const rect = img.getBoundingClientRect()
+  const width = rect.width - PICK_BORDER_INSET_PX * 2
+  const height = rect.height - PICK_BORDER_INSET_PX * 2
 
   if (width <= 0 || height <= 0) {
+    root.hidden = true
     borderSvg.classList.remove("is-visible", "is-hovered")
     overlay.badge.classList.remove("is-visible")
     return
   }
 
+  root.hidden = false
+  root.style.top = `${rect.top + window.scrollY}px`
+  root.style.left = `${rect.left + window.scrollX}px`
+  root.style.width = `${rect.width}px`
+  root.style.height = `${rect.height}px`
   borderSvg.setAttribute("viewBox", `0 0 ${width} ${height}`)
   path.setAttribute("d", buildPickBorderPath(width, height, PICK_BORDER_RADIUS_PX))
   syncOverlayState(img)
 }
 
-function wrapImage(img: HTMLImageElement): HTMLDivElement {
-  const existing = img.parentElement
-  if (existing?.classList.contains(WRAP_CLASS)) {
-    return existing
-  }
-
-  const wrapper = document.createElement("div")
-  wrapper.className = WRAP_CLASS
-
-  const parent = img.parentNode
-  if (!parent) return wrapper
-
-  parent.insertBefore(wrapper, img)
-  wrapper.appendChild(img)
-  return wrapper
-}
-
-function unwrapImage(img: HTMLImageElement) {
-  const wrapper = img.parentElement
-  if (!wrapper?.classList.contains(WRAP_CLASS)) return
-
-  wrapper.parentNode?.insertBefore(img, wrapper)
-  wrapper.remove()
-}
-
 function createOverlay(img: HTMLImageElement): ImageOverlay {
-  const wrapper = wrapImage(img)
+  const root = document.createElement("div")
+  root.className = "curator-ext-pick-overlay"
 
   const borderSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
   borderSvg.classList.add("curator-ext-pick-border-svg")
@@ -256,98 +255,186 @@ function createOverlay(img: HTMLImageElement): ImageOverlay {
   icon.appendChild(iconPath)
   badge.appendChild(icon)
 
-  wrapper.appendChild(borderSvg)
-  wrapper.appendChild(badge)
+  root.appendChild(borderSvg)
+  root.appendChild(badge)
+  document.body.appendChild(root)
 
-  const overlay = { img, wrapper, borderSvg, path, badge }
+  const overlay = { img, root, borderSvg, path, badge }
   overlays.set(img, overlay)
   updateOverlayGeometry(overlay)
   return overlay
+}
+
+function ensureOverlay(img: HTMLImageElement): ImageOverlay {
+  const overlay = overlays.get(img)
+  if (overlay) {
+    updateOverlayGeometry(overlay)
+    return overlay
+  }
+  return createOverlay(img)
 }
 
 function removeOverlay(img: HTMLImageElement) {
   const overlay = overlays.get(img)
   if (!overlay) return
 
-  overlay.borderSvg.remove()
-  overlay.badge.remove()
-  unwrapImage(img)
+  overlay.root.remove()
   overlays.delete(img)
 }
 
-function markPickable(img: HTMLImageElement) {
-  if (!isSaveableImageElement(img)) return
-  img.classList.add(PICKABLE_CLASS)
-  trackedImages.add(img)
-  if (!overlays.has(img)) {
-    createOverlay(img)
+function imageUnderPointer(x: number, y: number): HTMLImageElement | null {
+  if (isPointerOverCuratorUi(x, y)) return null
+
+  if (hoveredImg && pointInRect(x, y, hoveredImg.getBoundingClientRect())) {
+    if (document.contains(hoveredImg) && isSaveableImageElement(hoveredImg)) {
+      return hoveredImg
+    }
+  }
+
+  for (const entry of selectedEntries.values()) {
+    if (!document.contains(entry.img)) continue
+    if (!pointInRect(x, y, entry.img.getBoundingClientRect())) continue
+    if (isSaveableImageElement(entry.img)) return entry.img
+  }
+
+  const stack = document.elementsFromPoint(x, y).filter(
+    (node): node is Element =>
+      node instanceof Element && !isCuratorUiElement(node),
+  )
+
+  for (const node of stack) {
+    if (node instanceof HTMLImageElement && isSaveableImageElement(node)) {
+      return node
+    }
+  }
+
+  let current: Element | null = stack[0] ?? null
+  while (
+    current &&
+    current !== document.body &&
+    current !== document.documentElement
+  ) {
+    for (const img of current.querySelectorAll("img")) {
+      if (!(img instanceof HTMLImageElement)) continue
+      if (!pointInRect(x, y, img.getBoundingClientRect())) continue
+      if (isSaveableImageElement(img)) return img
+    }
+    current = current.parentElement
+  }
+
+  return null
+}
+
+function clearHoverState() {
+  const previousHoveredImg = hoveredImg
+  hoveredImg = null
+
+  if (previousHoveredImg) {
+    previousHoveredImg.classList.remove(PICKABLE_CLASS)
+    if (isImageSelected(previousHoveredImg)) {
+      syncOverlayState(previousHoveredImg)
+    } else {
+      removeOverlay(previousHoveredImg)
+    }
   }
 }
 
-function unmarkPickable(img: HTMLImageElement) {
-  img.classList.remove(PICKABLE_CLASS, HOVER_CLASS, SELECTED_CLASS)
-  trackedImages.delete(img)
-  hoveredImages.delete(img)
-  removeOverlay(img)
+function setHoveredImage(img: HTMLImageElement | null) {
+  if (img === hoveredImg) {
+    return
+  }
+
+  clearHoverState()
+  if (!img || !active) return
+
+  img.classList.add(PICKABLE_CLASS)
+  hoveredImg = img
+  ensureOverlay(img)
+  syncOverlayState(img)
 }
 
-function scanImages(root: ParentNode = document) {
+function updateHoverFromPointer() {
+  pointerRaf = 0
   if (!active) return
-  root.querySelectorAll("img").forEach((node) => {
-    if (node instanceof HTMLImageElement) {
-      markPickable(node)
+
+  const img = imageUnderPointer(lastPointerX, lastPointerY)
+  if (!img) {
+    clearHoverState()
+    return
+  }
+
+  setHoveredImage(img)
+}
+
+function handlePointerMove(event: PointerEvent) {
+  if (!active) return
+  lastPointerX = event.clientX
+  lastPointerY = event.clientY
+  if (pointerRaf) return
+  pointerRaf = requestAnimationFrame(updateHoverFromPointer)
+}
+
+function syncOverlayPositions() {
+  for (const [img, overlay] of overlays) {
+    if (document.contains(img)) {
+      updateOverlayGeometry(overlay)
+    } else {
+      removeOverlay(img)
     }
+  }
+}
+
+function scheduleOverlaySync() {
+  if (syncRaf) return
+  syncRaf = requestAnimationFrame(() => {
+    syncRaf = 0
+    if (!active) return
+    syncOverlayPositions()
   })
 }
 
-function syncSelectedClasses() {
-  for (const img of trackedImages) {
-    img.classList.toggle(SELECTED_CLASS, isImageSelected(img))
-    syncOverlayState(img)
+function mountSelectedOverlay(url: string, img: HTMLImageElement) {
+  img.classList.add(SELECTED_CLASS)
+  ensureOverlay(img)
+  syncOverlayState(img)
+  selectedEntries.set(url, { img })
+}
+
+function removeSelectedOverlay(url: string) {
+  const entry = selectedEntries.get(url)
+  if (!entry) return
+  entry.img.classList.remove(SELECTED_CLASS)
+  if (hoveredImg === entry.img) {
+    syncOverlayState(entry.img)
+  } else {
+    removeOverlay(entry.img)
   }
-}
-
-function handleMouseOver(event: MouseEvent) {
-  if (!active) return
-  const target = event.target
-  if (!(target instanceof HTMLImageElement)) return
-  if (!target.classList.contains(PICKABLE_CLASS)) return
-  target.classList.add(HOVER_CLASS)
-  hoveredImages.add(target)
-  syncOverlayState(target)
-}
-
-function handleMouseOut(event: MouseEvent) {
-  const target = event.target
-  if (!(target instanceof HTMLImageElement)) return
-  target.classList.remove(HOVER_CLASS)
-  hoveredImages.delete(target)
-  syncOverlayState(target)
+  selectedEntries.delete(url)
 }
 
 function handleClick(event: MouseEvent) {
   if (!active) return
-  const target = event.target
-  if (!(target instanceof HTMLImageElement)) return
-  if (!target.classList.contains(PICKABLE_CLASS)) return
+
+  const img = imageUnderPointer(event.clientX, event.clientY)
+  if (!img || !isSaveableImageElement(img)) return
 
   event.preventDefault()
   event.stopPropagation()
 
-  const url = resolveImageUrl(target)
+  const url = resolveImageUrl(img)
   if (!url) return
 
   if (selectedByUrl.has(url)) {
     selectedByUrl.delete(url)
-    target.classList.remove(SELECTED_CLASS)
+    removeSelectedOverlay(url)
   } else {
     const isFirstInStack = selectedByUrl.size === 0
     const stackRotate = randomStackRotation()
     const stackScale = stackScaleForNewImage(isFirstInStack)
     const entranceDrift = boundedStackEntranceDrift(
       randomStackEntranceDrift(),
-      target.naturalWidth || target.clientWidth,
-      target.naturalHeight || target.clientHeight,
+      img.naturalWidth || img.clientWidth,
+      img.naturalHeight || img.clientHeight,
       stackRotate,
       stackScale,
       IMAGE_STACK_MAX_WIDTH_PX,
@@ -355,39 +442,24 @@ function handleClick(event: MouseEvent) {
     selectedByUrl.set(url, {
       url,
       filename: filenameFromImageUrl(url),
-      naturalWidth: target.naturalWidth || target.clientWidth,
-      naturalHeight: target.naturalHeight || target.clientHeight,
+      naturalWidth: img.naturalWidth || img.clientWidth,
+      naturalHeight: img.naturalHeight || img.clientHeight,
       stackLayer: nextStackLayer++,
       stackRotate,
       stackEntranceDriftX: entranceDrift.x,
       stackEntranceDriftY: entranceDrift.y,
       stackScale,
     })
-    target.classList.add(SELECTED_CLASS)
+    mountSelectedOverlay(url, img)
   }
 
-  syncOverlayState(target)
   notifyListeners()
-}
-
-function handleScroll() {
-  for (const overlay of overlays.values()) {
-    updateOverlayGeometry(overlay)
-  }
-}
-
-function handleResize() {
-  for (const overlay of overlays.values()) {
-    updateOverlayGeometry(overlay)
-  }
 }
 
 export function subscribeToImageSelection(listener: SelectionListener): () => void {
   listeners.add(listener)
   listener(Array.from(selectedByUrl.values()))
-  return () => {
-    listeners.delete(listener)
-  }
+  return () => listeners.delete(listener)
 }
 
 export function getSelectedImages(): SelectedImage[] {
@@ -395,71 +467,35 @@ export function getSelectedImages(): SelectedImage[] {
 }
 
 export function clearImageSelection() {
+  for (const url of [...selectedByUrl.keys()]) removeSelectedOverlay(url)
   selectedByUrl.clear()
   nextStackLayer = 0
-  for (const img of trackedImages) {
-    img.classList.remove(SELECTED_CLASS)
-    syncOverlayState(img)
-  }
   notifyListeners()
 }
 
 export function removeImageFromSelection(url: string) {
   if (!selectedByUrl.has(url)) return
-
   selectedByUrl.delete(url)
-  for (const img of trackedImages) {
-    if (resolveImageUrl(img) === url) {
-      img.classList.remove(SELECTED_CLASS)
-      syncOverlayState(img)
-    }
-  }
+  removeSelectedOverlay(url)
   notifyListeners()
 }
 
 export function startPickMode() {
-  if (active) {
-    scanImages()
-    syncSelectedClasses()
-    return
-  }
+  if (active) return
 
   active = true
   ensureStyles()
-  scanImages()
 
-  document.addEventListener("mouseover", handleMouseOver, true)
-  document.addEventListener("mouseout", handleMouseOut, true)
+  document.addEventListener("pointermove", handlePointerMove, true)
   document.addEventListener("click", handleClick, true)
-  window.addEventListener("scroll", handleScroll, true)
-  window.addEventListener("resize", handleResize, true)
+  window.addEventListener("scroll", scheduleOverlaySync, true)
+  window.addEventListener("resize", scheduleOverlaySync, true)
 
-  observer = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      mutation.addedNodes.forEach((node) => {
-        if (node instanceof HTMLImageElement) {
-          markPickable(node)
-          syncSelectedClasses()
-        } else if (node instanceof HTMLElement) {
-          scanImages(node)
-          syncSelectedClasses()
-        }
-      })
-      mutation.removedNodes.forEach((node) => {
-        if (node instanceof HTMLImageElement) {
-          unmarkPickable(node)
-        } else if (node instanceof HTMLElement) {
-          node.querySelectorAll("img").forEach((img) => {
-            if (img instanceof HTMLImageElement && !document.contains(img)) {
-              unmarkPickable(img)
-            }
-          })
-        }
-      })
-    }
-  })
+  for (const [url, entry] of selectedEntries) {
+    if (!selectedByUrl.has(url) || !document.contains(entry.img)) continue
+    mountSelectedOverlay(url, entry.img)
+  }
 
-  observer.observe(document.documentElement, { childList: true, subtree: true })
   notifyListeners()
 }
 
@@ -467,20 +503,23 @@ export function stopPickMode() {
   if (!active) return
 
   active = false
-  document.removeEventListener("mouseover", handleMouseOver, true)
-  document.removeEventListener("mouseout", handleMouseOut, true)
+  document.removeEventListener("pointermove", handlePointerMove, true)
   document.removeEventListener("click", handleClick, true)
-  window.removeEventListener("scroll", handleScroll, true)
-  window.removeEventListener("resize", handleResize, true)
-  observer?.disconnect()
-  observer = null
+  window.removeEventListener("scroll", scheduleOverlaySync, true)
+  window.removeEventListener("resize", scheduleOverlaySync, true)
 
-  for (const img of [...trackedImages]) {
-    unmarkPickable(img)
+  if (pointerRaf) cancelAnimationFrame(pointerRaf)
+  if (syncRaf) cancelAnimationFrame(syncRaf)
+  pointerRaf = 0
+  syncRaf = 0
+
+  clearHoverState()
+
+  for (const entry of selectedEntries.values()) {
+    entry.img.classList.remove(SELECTED_CLASS)
+    removeOverlay(entry.img)
   }
-  trackedImages = new Set()
-  hoveredImages.clear()
-  overlays.clear()
+
   removeStyles()
 }
 
