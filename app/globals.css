@@ -604,8 +604,8 @@
   transform: translateY(8px);
   pointer-events: none;
   transition:
-    opacity 150ms ease-out,
-    transform 150ms ease-out;
+    opacity 100ms ease-out,
+    transform 100ms ease-out;
 }
 
 .extension-promo-toast-dismiss-visible {
@@ -613,8 +613,8 @@
   transform: translateY(0);
   pointer-events: auto;
   transition:
-    opacity 200ms ease-out,
-    transform 200ms ease-out;
+    opacity 150ms ease-out,
+    transform 150ms ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {
