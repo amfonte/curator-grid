@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { CuratorLogo } from "@/components/icons/curator-logo"
 import { Plus, Search, User as UserIcon, X } from "lucide-react"
 
 interface TopNavProps {
@@ -159,7 +160,7 @@ export function TopNav(props: TopNavProps) {
   const hasSearch = search.trim().length > 0
 
   const headerBaseClasses =
-    "fixed inset-x-0 top-0 z-30 transform transition-transform duration-200 ease-out will-change-transform"
+    "fixed inset-x-0 top-0 z-30 transform transition-transform duration-200 ease-out"
   const headerVisibilityClasses = isHidden ? "-translate-y-full" : "translate-y-0"
 
   const userMenu = mounted ? (
@@ -208,7 +209,7 @@ export function TopNav(props: TopNavProps) {
           )}
         >
           <div className="flex items-center">
-            <img src="/logo/curator-logo.svg" alt="Curator" className="h-[60px] w-auto" />
+            <CuratorLogo />
           </div>
 
           <div className="flex min-w-0 flex-1 justify-center px-6">
@@ -270,7 +271,7 @@ export function TopNav(props: TopNavProps) {
         )}
       >
         <div className="flex items-center">
-          <img src="/logo/curator-logo.svg" alt="Curator" className="h-[60px] w-auto" />
+          <CuratorLogo />
         </div>
 
         <div className="flex items-center gap-6">{userMenu}</div>
@@ -288,7 +289,7 @@ export function TopNav(props: TopNavProps) {
         )}
       >
         <div className="flex items-center">
-          <img src="/logo/curator-logo.svg" alt="Curator" className="h-[60px] w-auto" />
+          <CuratorLogo />
         </div>
 
         <div className="flex min-w-0 flex-1 justify-center px-6">

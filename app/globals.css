@@ -188,8 +188,18 @@
 
 /* Lift panel so it doesn't sit under the Next badge. */
 .dialkit-panel[data-position="bottom-left"] {
-  bottom: 56px !important; /* 16px default + ~40px */
+  --dialkit-panel-bottom: 56px; /* 16px default + ~40px for Next dev badge */
+  --dialkit-panel-top-margin: 16px;
+  bottom: var(--dialkit-panel-bottom) !important;
   left: 16px;
+  /* DialKit sizes panel-inner up to windowHeight - 32px, which ignores our
+     bottom offset and lets the panel grow past the top of the viewport. */
+  max-height: calc(100vh - var(--dialkit-panel-bottom) - var(--dialkit-panel-top-margin)) !important;
+}
+
+.dialkit-panel[data-position="bottom-left"] .dialkit-panel-inner:not([data-collapsed="true"]) {
+  max-height: calc(100vh - var(--dialkit-panel-bottom) - var(--dialkit-panel-top-margin)) !important;
+  overflow-y: auto !important;
 }
 
 /* Shared text-link underline animation with default visible underline. */
@@ -1123,7 +1133,12 @@ button.cta-secondary.cta-icon:active,
   background-repeat: repeat-x;
   background-size: auto 58px;
   background-position-x: var(--tile-offset);
-  will-change: transform;
+}
+
+/* Foreground UI logos: inline SVG at native size for retina/mobile sharpness. */
+.curator-logo-vector {
+  shape-rendering: geometricPrecision;
+  max-width: none;
 }
 
 .auth-logo-row--left .auth-logo-row-inner {
