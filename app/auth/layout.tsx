@@ -7,7 +7,7 @@ export default function AuthLayout({
   children: ReactNode
 }) {
   return (
-    <main className="relative flex min-h-screen items-center justify-center bg-surface-tertiary px-4 overflow-hidden">
+    <main className="relative flex h-dvh max-h-dvh items-center justify-center overflow-hidden overscroll-none bg-surface-tertiary px-4">
       <AuthLogoPatternReveal />
       <div className="relative z-10 w-full flex items-center justify-center">
         {children}

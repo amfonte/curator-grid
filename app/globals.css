@@ -1088,9 +1088,9 @@ button.cta-secondary.cta-icon:active,
   background-color: var(--gray-20);
 }
 
-/* Auth logo background pattern */
+/* Auth logo background pattern — fixed to viewport so tall/wide rows never expand page scroll. */
 .auth-logo-pattern {
-  position: absolute;
+  position: fixed;
   inset: 0;
   pointer-events: none;
   overflow: hidden;
@@ -1102,8 +1102,7 @@ button.cta-secondary.cta-icon:active,
   display: flex;
   flex-direction: column;
   padding: 0;
-  min-height: 100%;
-  overflow: visible;
+  overflow: hidden;
 }
 
 /* Auth logo rows: clip container; stagger via --tile-offset on inner */
