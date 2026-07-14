@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
-import { CuratorLogo } from "@/components/icons/curator-logo"
+import { CuratorLogo, CURATOR_LOGO_MARK_WIDTH } from "@/components/icons/curator-logo"
 import { Plus, Search, User as UserIcon, X } from "lucide-react"
 
 interface TopNavProps {
@@ -159,9 +159,15 @@ export function TopNav(props: TopNavProps) {
   const isCollectionsDashboard = !isCollectionView && showAddCollection
   const hasSearch = search.trim().length > 0
 
-  const headerBaseClasses =
-    "fixed inset-x-0 top-0 z-30 transform transition-transform duration-200 ease-out"
-  const headerVisibilityClasses = isHidden ? "-translate-y-full" : "translate-y-0"
+  /** Slide search/actions on scroll; logo stays outside this transform to avoid iOS SVG blur. */
+  const headerShellClasses = "fixed inset-x-0 top-0 z-30"
+  const headerPanelClasses =
+    "flex w-full transition-transform duration-200 ease-out transform"
+  const headerPanelVisibilityClasses = isHidden ? "-translate-y-full" : "translate-y-0"
+  const headerLogoClasses = cn(
+    "pointer-events-none absolute left-4 top-6 z-10 transition-opacity duration-200 ease-out",
+    isHidden ? "opacity-0" : "opacity-100",
+  )
 
   const userMenu = mounted ? (
     <DropdownMenu>
@@ -201,18 +207,20 @@ export function TopNav(props: TopNavProps) {
   if (isCollectionsDashboard) {
     return (
       <>
-        <header
-          className={cn(
-            "flex shrink-0 items-center px-4 pt-6",
-            headerBaseClasses,
-            headerVisibilityClasses,
-          )}
-        >
-          <div className="flex items-center">
-            <CuratorLogo />
+        <header className={headerShellClasses}>
+          <div className={headerLogoClasses} aria-hidden={isHidden}>
+            <CuratorLogo className="pointer-events-none" />
           </div>
+          <div
+            className={cn(
+              "shrink-0 items-center px-4 pt-6",
+              headerPanelClasses,
+              headerPanelVisibilityClasses,
+            )}
+          >
+            <div className="shrink-0" style={{ width: CURATOR_LOGO_MARK_WIDTH }} aria-hidden />
 
-          <div className="flex min-w-0 flex-1 justify-center px-6">
+            <div className="flex min-w-0 flex-1 justify-center px-6">
             <div className="search-field min-w-0 w-full max-w-md">
               <div className="flex min-w-0 flex-1 items-center gap-2">
                 <Search className="h-4 w-4 text-icon" />
@@ -248,6 +256,7 @@ export function TopNav(props: TopNavProps) {
             </Button>
             {userMenu}
           </div>
+          </div>
         </header>
         <Button
           variant="default"
@@ -263,36 +272,40 @@ export function TopNav(props: TopNavProps) {
 
   if (isEmptyDashboard) {
     return (
-      <header
-        className={cn(
-          "flex shrink-0 items-center justify-between px-4 pt-6",
-          headerBaseClasses,
-          headerVisibilityClasses,
-        )}
-      >
-        <div className="flex items-center">
-          <CuratorLogo />
+      <header className={headerShellClasses}>
+        <div className={headerLogoClasses} aria-hidden={isHidden}>
+          <CuratorLogo className="pointer-events-none" />
         </div>
-
-        <div className="flex items-center gap-6">{userMenu}</div>
+        <div
+          className={cn(
+            "shrink-0 items-center justify-between px-4 pt-6",
+            headerPanelClasses,
+            headerPanelVisibilityClasses,
+          )}
+        >
+          <div className="shrink-0" style={{ width: CURATOR_LOGO_MARK_WIDTH }} aria-hidden />
+          <div className="flex items-center gap-6">{userMenu}</div>
+        </div>
       </header>
     )
   }
 
   if (isCollectionView) {
     return (
-      <header
-        className={cn(
-          "flex shrink-0 items-center px-4 pt-6",
-          headerBaseClasses,
-          headerVisibilityClasses,
-        )}
-      >
-        <div className="flex items-center">
-          <CuratorLogo />
+      <header className={headerShellClasses}>
+        <div className={headerLogoClasses} aria-hidden={isHidden}>
+          <CuratorLogo className="pointer-events-none" />
         </div>
+        <div
+          className={cn(
+            "shrink-0 items-center px-4 pt-6",
+            headerPanelClasses,
+            headerPanelVisibilityClasses,
+          )}
+        >
+          <div className="shrink-0" style={{ width: CURATOR_LOGO_MARK_WIDTH }} aria-hidden />
 
-        <div className="flex min-w-0 flex-1 justify-center px-6">
+          <div className="flex min-w-0 flex-1 justify-center px-6">
           <div className="search-field min-w-0 w-full max-w-md">
             <div className="flex min-w-0 flex-1 items-center gap-2">
               <Search className="h-4 w-4 text-icon" />
@@ -323,6 +336,7 @@ export function TopNav(props: TopNavProps) {
         </div>
 
         <div className="ml-auto flex items-center gap-6">{userMenu}</div>
+        </div>
       </header>
     )
   }
@@ -332,8 +346,9 @@ export function TopNav(props: TopNavProps) {
       className={cn(
         "flex h-14 shrink-0 items-center gap-3 px-4",
         "border-b border-border",
-        headerBaseClasses,
-        headerVisibilityClasses,
+        headerShellClasses,
+        headerPanelClasses,
+        headerPanelVisibilityClasses,
       )}
     >
       <h1 className="text-sm font-semibold text-foreground">Curated</h1>
