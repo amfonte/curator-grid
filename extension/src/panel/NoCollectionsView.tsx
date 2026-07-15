@@ -1,5 +1,7 @@
 import { useState } from "react"
+import { CtaTextButton } from "../components/CtaTextButton"
 import { openCuratorSignedIn } from "../lib/open-curator"
+import { cn } from "../lib/utils"
 
 export function NoCollectionsView() {
   const [opening, setOpening] = useState(false)
@@ -23,14 +25,13 @@ export function NoCollectionsView() {
           To save URLs or images, you need to create a collection first.
         </p>
       </div>
-      <button
-        type="button"
-        className="cta-primary w-full"
+      <CtaTextButton
+        className={cn("w-full", opening && "cta-disabled-loading")}
         disabled={opening}
         onClick={() => void handleOpenDashboard()}
       >
         {opening ? "Opening Curator…" : "Create your first collection"}
-      </button>
+      </CtaTextButton>
     </div>
   )
 }

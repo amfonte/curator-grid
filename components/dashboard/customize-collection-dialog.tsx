@@ -691,10 +691,7 @@ export function CustomizeCollectionDialog({
           <div className="shrink-0">
             <Button
               variant="default"
-              className={cn(
-                "cta-primary w-full rounded-[48px] px-5 py-2.5",
-                !hasChanges && !loading && "!opacity-50",
-              )}
+              className={cn("w-full px-5 py-2.5", loading && "cta-disabled-loading")}
               disabled={loading || !hasChanges}
               onClick={handleSave}
             >

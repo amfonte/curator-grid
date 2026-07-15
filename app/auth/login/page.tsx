@@ -9,6 +9,7 @@ import { CuratorLogoLockup } from "@/components/icons/curator-logo"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { FormField } from "@/components/ui/form-field"
+import { cn } from "@/lib/utils"
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
@@ -72,7 +73,7 @@ export default function LoginPage() {
 
             <Button
               type="submit"
-              className="w-full"
+              className={cn("w-full", loading && "cta-disabled-loading")}
               disabled={loading}
             >
               {loading ? "Signing in..." : "Sign in"}

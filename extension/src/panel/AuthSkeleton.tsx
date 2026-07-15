@@ -7,7 +7,7 @@ export function AuthSkeleton() {
       <img
         src={chrome.runtime.getURL("assets/curator-logo-lockup.svg")}
         alt=""
-        className="h-[80px] w-[75px] object-contain"
+        className="curator-logo-vector h-[80px] w-[75px] shrink-0 object-contain"
         aria-hidden
       />
 

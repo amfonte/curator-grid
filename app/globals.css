@@ -805,7 +805,6 @@ button.cta-primary,
   --cta-primary-bottom: var(--gray-100);
   background: linear-gradient(to bottom, var(--cta-primary-top), var(--cta-primary-bottom)) !important;
   border: 2px solid var(--cta-border);
-  box-shadow: inset 0px 1.5px 0px 0px rgba(255, 255, 255, 0.35), inset 0px 7px 6px 0px rgba(38, 38, 38, 1), inset 0px -5px 6px 0px rgba(255, 255, 255, 0.25);
   color: var(--gray-10) !important;
   font-family: var(--font-sans);
   font-size: 1rem;
@@ -824,6 +823,107 @@ button.cta-primary:active,
   transform: scale(0.97);
 }
 
+/* Text CTAs: slightly subtler top gloss than icon-only (2.5px vs 1.5px).
+   Pill radius on base styles so SSR / pre-hydration paint never shows square corners
+   before Lisse applies the squircle clip-path. */
+button.cta-primary:not(.cta-icon),
+.cta-primary:not(.cta-icon) {
+  border-radius: 48px;
+  box-shadow: inset 0px 2.5px 0px 0px rgba(255, 255, 255, 0.35), inset 0px 7px 6px 0px rgba(38, 38, 38, 1), inset 0px -5px 6px 0px rgba(255, 255, 255, 0.25);
+}
+
+/* Lisse text CTAs: scale the wrapper so SVG borders/shadows press with the button. */
+div:has(> [data-slot="smooth-corners"].cta-primary),
+div:has(> [data-slot="smooth-corners"].cta-secondary) {
+  display: inline-flex;
+  max-width: 100%;
+  transition: transform 0.15s ease;
+}
+
+/* Scale the Lisse wrapper so SVG borders move with the press.
+   Full-width auth CTAs: scale(0.99) per CTA spec. Legacy w-full:active must not
+   also transform the button — that double-scale was skewing inset gloss. */
+div:has(> [data-slot="smooth-corners"].w-full) {
+  display: flex;
+  width: 100%;
+  border-radius: 9999px;
+}
+
+div:has(> [data-slot="smooth-corners"].cta-primary:active),
+div:has(> [data-slot="smooth-corners"].cta-secondary:active) {
+  transform: scale(0.97);
+}
+
+div:has(> [data-slot="smooth-corners"].cta-primary.w-full:active),
+div:has(> [data-slot="smooth-corners"].cta-secondary.w-full:active) {
+  transform: scale(0.99);
+}
+
+[data-slot="smooth-corners"].cta-primary:active,
+[data-slot="smooth-corners"].cta-secondary:active {
+  transform: none !important;
+}
+
+/* SVG border replaces CSS border. Inset gloss uses pill border-radius so shadows
+   wrap the curved ends, then Lisse clip-path trims the silhouette to a squircle. */
+[data-slot="smooth-corners"].cta-primary,
+[data-slot="smooth-corners"].cta-secondary {
+  position: relative;
+  isolation: isolate;
+  border: none !important;
+  border-radius: 9999px;
+  /* Press uses wrapper transform only — don't transition box-shadow (avoids gloss drift). */
+  transition: transform 0.15s ease, --cta-primary-top 0.15s ease, --cta-primary-bottom 0.15s ease, --cta-secondary-top 0.15s ease, --cta-secondary-bottom 0.15s ease !important;
+}
+
+[data-slot="smooth-corners"].cta-primary {
+  box-shadow:
+    inset 0 2.5px 0 rgba(255, 255, 255, 0.35),
+    inset 0 7px 6px rgba(38, 38, 38, 1),
+    inset 0 -5px 6px rgba(255, 255, 255, 0.25) !important;
+}
+
+[data-slot="smooth-corners"].cta-secondary {
+  box-shadow:
+    inset 0 2.5px 0 rgba(255, 255, 255, 0.7),
+    inset 0 8px 6px var(--gray-40),
+    inset 0 -6px 6px rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Locked gloss on press — same values as default (CTA spec). */
+[data-slot="smooth-corners"].cta-primary:active {
+  box-shadow:
+    inset 0 2.5px 0 rgba(255, 255, 255, 0.35),
+    inset 0 7px 6px rgba(38, 38, 38, 1),
+    inset 0 -5px 6px rgba(255, 255, 255, 0.25) !important;
+}
+
+[data-slot="smooth-corners"].cta-secondary:active {
+  box-shadow:
+    inset 0 2.5px 0 rgba(255, 255, 255, 0.7),
+    inset 0 8px 6px var(--gray-40),
+    inset 0 -6px 6px rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Lisse applies clip-path in useLayoutEffect — mask the one-frame pending paint
+   (border stripped, clip-path not yet ready). See @lisse/react README. */
+[data-slot="smooth-corners"].cta-primary[data-state="pending"],
+[data-slot="smooth-corners"].cta-secondary[data-state="pending"] {
+  opacity: 0;
+}
+
+[data-slot="smooth-corners"].cta-primary[data-state="ready"],
+[data-slot="smooth-corners"].cta-secondary[data-state="ready"] {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-slot="smooth-corners"].cta-primary[data-state="ready"],
+  [data-slot="smooth-corners"].cta-secondary[data-state="ready"] {
+    transition: opacity 100ms ease;
+  }
+}
+
 button.cta-secondary,
 .cta-secondary {
   --cta-border: var(--gray-50);
@@ -831,7 +931,6 @@ button.cta-secondary,
   --cta-secondary-bottom: var(--gray-50);
   background: linear-gradient(to bottom, var(--cta-secondary-top), var(--cta-secondary-bottom)) !important;
   border: 2px solid var(--cta-border);
-  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.7), inset 0 8px 6px var(--gray-40), inset 0 -6px 6px rgba(255, 255, 255, 0.8);
   color: var(--gray-90) !important;
   font-family: var(--font-sans);
   font-size: 1rem;
@@ -839,6 +938,24 @@ button.cta-secondary,
   line-height: 1.5rem;
   transition: transform 0.15s ease, box-shadow 0.15s ease, --cta-secondary-top 0.15s ease, --cta-secondary-bottom 0.15s ease !important;
 }
+
+button.cta-secondary:not(.cta-icon),
+.cta-secondary:not(.cta-icon) {
+  border-radius: 48px;
+  box-shadow: inset 0 2.5px 0 rgba(255, 255, 255, 0.7), inset 0 8px 6px var(--gray-40), inset 0 -6px 6px rgba(255, 255, 255, 0.8);
+}
+
+/* Icon-only CTAs — 1.5px top gloss; must follow text :not(.cta-icon) overrides. */
+button.cta-primary.cta-icon,
+.cta-primary.cta-icon {
+  box-shadow: inset 0px 1.5px 0px 0px rgba(255, 255, 255, 0.35), inset 0px 7px 6px 0px rgba(38, 38, 38, 1), inset 0px -5px 6px 0px rgba(255, 255, 255, 0.25) !important;
+}
+
+button.cta-secondary.cta-icon,
+.cta-secondary.cta-icon {
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.7), inset 0 8px 6px var(--gray-40), inset 0 -6px 6px rgba(255, 255, 255, 0.8) !important;
+}
+
 button.cta-secondary:hover,
 .cta-secondary:hover {
   cursor: pointer;
@@ -850,11 +967,11 @@ button.cta-secondary:active,
   transform: scale(0.97);
 }
 
-/* Full-width text CTAs (e.g. auth submit buttons with w-full) use a subtler press scale */
-button.cta-primary.w-full:active,
-.cta-primary.w-full:active,
-button.cta-secondary.w-full:active,
-.cta-secondary.w-full:active {
+/* Full-width text CTAs (e.g. auth submit buttons with w-full) — translateY when Lisse-wrapped */
+button.cta-primary.w-full:active:not([data-slot="smooth-corners"]),
+.cta-primary.w-full:active:not([data-slot="smooth-corners"]),
+button.cta-secondary.w-full:active:not([data-slot="smooth-corners"]),
+.cta-secondary.w-full:active:not([data-slot="smooth-corners"]) {
   transform: scale(0.99);
 }
 
@@ -864,6 +981,42 @@ button.cta-primary.cta-icon:active,
 button.cta-secondary.cta-icon:active,
 .cta-secondary.cta-icon:active {
   transform: scale(0.96);
+}
+
+/* Disabled (Figma): 50% opacity on the whole component. Lisse anchors the SVG stroke on
+   the wrapper, so fade the wrapper — keep the button at opacity 1 to avoid double-fade.
+   Loading disabled (.cta-disabled-loading) stays full opacity per CTA spec. */
+button.cta-primary:disabled:not(.cta-disabled-loading),
+.cta-primary:disabled:not(.cta-disabled-loading),
+button.cta-secondary:disabled:not(.cta-disabled-loading),
+.cta-secondary:disabled:not(.cta-disabled-loading),
+[data-slot="smooth-corners"].cta-primary:disabled,
+[data-slot="smooth-corners"].cta-secondary:disabled {
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+div:has(> [data-slot="smooth-corners"].cta-primary:disabled:not(.cta-disabled-loading)),
+div:has(> [data-slot="smooth-corners"].cta-secondary:disabled:not(.cta-disabled-loading)) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button.cta-primary:disabled:not(.cta-disabled-loading):not([data-slot="smooth-corners"]),
+.cta-primary:disabled:not(.cta-disabled-loading):not([data-slot="smooth-corners"]),
+button.cta-secondary:disabled:not(.cta-disabled-loading):not([data-slot="smooth-corners"]),
+.cta-secondary:disabled:not(.cta-disabled-loading):not([data-slot="smooth-corners"]) {
+  opacity: 0.5;
+}
+
+button.cta-primary:disabled.cta-disabled-loading,
+.cta-primary:disabled.cta-disabled-loading,
+button.cta-secondary:disabled.cta-disabled-loading,
+.cta-secondary:disabled.cta-disabled-loading,
+div:has(> [data-slot="smooth-corners"].cta-primary:disabled.cta-disabled-loading),
+div:has(> [data-slot="smooth-corners"].cta-secondary:disabled.cta-disabled-loading) {
+  opacity: 1;
+  cursor: not-allowed;
 }
 
 /* Size slider thumb: pressed scale on inner (so we don't override Radix's transform).

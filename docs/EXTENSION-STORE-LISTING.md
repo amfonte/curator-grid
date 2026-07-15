@@ -121,6 +121,20 @@ cd extension/dist && zip -r ../curator-extension.zip .
 
 ---
 
+## Submitting an update
+
+For version updates, the Chrome Web Store has **no separate “What’s new” field** for extensions. Release notes go in the **Detailed description** on the **Store listing** tab (Google’s docs call this the place for “update logs”). See [Complete your listing information](https://developer.chrome.com/docs/webstore/cws-dashboard-listing).
+
+Typical flow:
+
+1. **Package** tab — Upload `extension/curator-extension.zip` (version in `manifest.json` must be higher than the published build).
+2. **Store listing** tab — Append a short version note to the bottom of the detailed description (optional but recommended).
+3. **Submit for review** — Same review flow as the initial publish; you can defer publishing until review completes.
+
+Release note copy for recent versions lives in `extension/CHANGELOG.md`.
+
+---
+
 ## Pre-submit QA
 
 Run through this checklist on a **clean Chrome profile** with the **production** build pointed at `{SITE_URL}`.

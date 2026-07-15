@@ -10,6 +10,7 @@ import { CuratorLogoLockup } from "@/components/icons/curator-logo"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { FormField } from "@/components/ui/form-field"
+import { cn } from "@/lib/utils"
 
 type GateStatus = "loading" | "ready" | "invalid"
 
@@ -141,7 +142,7 @@ export default function ResetPasswordPage() {
                   />
                 </FormField>
 
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className={cn("w-full", loading && "cta-disabled-loading")} disabled={loading}>
                   {loading ? "Updating…" : "Update password"}
                 </Button>
               </form>

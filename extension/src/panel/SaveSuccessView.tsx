@@ -1,6 +1,8 @@
 import { useState } from "react"
+import { CtaTextButton } from "../components/CtaTextButton"
 import { openCuratorSignedIn } from "../lib/open-curator"
 import type { PanelTab } from "../lib/messaging"
+import { cn } from "../lib/utils"
 
 type SaveSuccessViewProps = {
   boardName: string
@@ -45,14 +47,14 @@ export function SaveSuccessView({
       <p className="text-center text-lg font-medium leading-7 text-foreground">
         {formatSuccessMessage(saveType, boardName, imageCount)}
       </p>
-      <button
-        type="button"
-        className="cta-secondary w-full"
+      <CtaTextButton
+        variant="secondary"
+        className={cn("w-full", opening && "cta-disabled-loading")}
         disabled={opening}
         onClick={() => void handleOpenCollection()}
       >
         {opening ? "Opening Curator…" : "View on Curator"}
-      </button>
+      </CtaTextButton>
     </div>
   )
 }

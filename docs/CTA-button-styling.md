@@ -27,12 +27,13 @@ This document defines the canonical styling for all CTA (call-to-action) buttons
 
 ## States
 
-Each type has four states: **Default**, **Hover**, **Pressed**, **Disabled (loading)**.
+Each type has four states: **Default**, **Hover**, **Pressed**, **Disabled (inactive)**, and **Disabled (loading)**.
 
 - **Default:** Base appearance.
 - **Hover:** `cursor: pointer`; slightly adjusted gradient/shadows.
 - **Pressed:** Slightly scaled down via `transform: scale(...)` so the button appears pressed into the surface. **Narrow text buttons** (e.g. non–full-width CTAs): `scale(0.97)`. **Full-width auth CTAs** (e.g. login/sign up using `w-full`): `scale(0.99)`. **Icon-only** (`.cta-icon`): `scale(0.96)` so the press is as noticeable on small buttons. Box-shadow is unchanged from default/hover (no separate pressed shadow).
-- **Disabled (loading):** When the button is disabled while an action is in progress (e.g. sign in, create account, confirming collection creation), it must keep **full opacity** (`opacity: 1`). Do not apply reduced opacity; the button should look solid while the system processes the request.
+- **Disabled (inactive):** Same enabled styling at **`opacity: 0.5`** (matches Figma — instance opacity on the component). For Lisse-wrapped text CTAs, apply opacity on the SmoothCorners wrapper so the SVG stroke fades with the fill.
+- **Disabled (loading):** Keep the default enabled appearance at **`opacity: 1`**. Add class `.cta-disabled-loading` while an async action is in progress.
 
 ---
 
@@ -74,7 +75,7 @@ Use these CSS variables (with fallbacks) so theming stays consistent.
 - **Border radius:** `48px` (pill); pressed: `47.52px`.
 - **Label:** White, 16px, medium weight, centered.
 - **Inner shadow (gloss):**
-  - Default/Hover: `inset 0 3px 0 rgba(255,255,255,0.35)`, `inset 0 8px 6px var(--grayscale/100)`, `inset 0 -6px 6px rgba(255,255,255,0.25)`.
+  - Default/Hover: `inset 0 2.5px 0 rgba(255,255,255,0.35)`, `inset 0 8px 6px var(--grayscale/100)`, `inset 0 -6px 6px rgba(255,255,255,0.25)`.
   - Pressed: Same as default/hover (implementation uses only transform for pressed feel).
 
 ---
@@ -87,7 +88,7 @@ Use these CSS variables (with fallbacks) so theming stays consistent.
 - **Border radius:** `48px` (pressed `47.52px`).
 - **Label:** Dark text `var(--text/bodyprimary, #333)`, same typography as primary.
 - **Inner shadow (gloss):**
-  - Default: `inset 0 3px 0 rgba(255,255,255,0.7)`, `inset 0 8px 6px var(--grayscale/40)`, `inset 0 -6px 6px rgba(255,255,255,0.8)`.
+  - Default: `inset 0 2.5px 0 rgba(255,255,255,0.7)`, `inset 0 8px 6px var(--grayscale/40)`, `inset 0 -6px 6px rgba(255,255,255,0.8)`.
   - Hover: Same with `var(--grayscale/50)` for the mid shadow.
   - Pressed: Same as default/hover (implementation uses only transform for pressed feel).
 
@@ -99,7 +100,7 @@ Use these CSS variables (with fallbacks) so theming stays consistent.
 - **Padding:** `12px` (Default/Hover); pressed: ~`19.6px` (to keep icon centered with smaller size).
 - **Border:** Same as primary text button (2px; 1.96px when pressed).
 - **Background & gradient:** Same as primary text button.
-- **Inner shadow:** Same gloss as primary (3px / 8px 6px / -6px 6px; pressed with 2.94px / 7.84px / 5.88px).
+- **Inner shadow:** Top gloss `1.5px` (subtler on circular buttons); mid/bottom same as primary text (`8px 6px / -6px 6px`).
 - **Icon:** 24×24px, white; when pressed the icon container can be 23.52px.
 
 ---
@@ -109,7 +110,7 @@ Use these CSS variables (with fallbacks) so theming stays consistent.
 - **Size:** Same as icon-only primary (48px; 47.04px pressed).
 - **Padding / border / radius:** Same as secondary text button (2px; 1.96px when pressed).
 - **Background & gradient:** Same as secondary text button.
-- **Inner shadow:** Same gloss as secondary text button (including Default/Hover/Pressed variants).
+- **Inner shadow:** Top gloss `1.5px` (subtler on circular buttons); mid/bottom same as secondary text.
 - **Icon:** 24×24px, dark (`#333` / body primary).
 
 ---
@@ -118,7 +119,8 @@ Use these CSS variables (with fallbacks) so theming stays consistent.
 
 - **Alignment:** Content (label or icon) centered horizontally and vertically.
 - **Hover:** Add `cursor: pointer` for all interactive states.
-- **Disabled (loading):** When `disabled` is set during an async action, keep `opacity: 1` (override any generic disabled-opacity utility for CTA buttons so they remain visually solid).
+- **Disabled (loading):** When `disabled` during an async action, add `.cta-disabled-loading` and keep `opacity: 1`.
+- **Disabled (inactive):** When `disabled` because the action is unavailable, use `opacity: 0.5` on the component (wrapper for Lisse text CTAs).
 - **Structure:** Use a single wrapper (e.g. `div` or `button`) with:
   - Gradient background
   - Border and border-radius

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useDialKit } from "dialkit"
+import { useDialogAnimationsDials } from "@/lib/dialkit/use-dialog-animations-dials"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -71,22 +71,7 @@ DialogTitle.displayName = DialogPrimitive.Title.displayName
 // Dev-only DialKit tuner that drives Tailwind animate-in/out duration and easing
 // via CSS variables.
 export function DialogAnimationsDialKitDev() {
-  const dial = useDialKit("Dialog animations", {
-    enter: {
-      type: "easing",
-      duration: 0.45,
-      ease: [0.7, 0.3, 0.3, 0.9], // CSS `ease`
-      __mode: "easing",
-    },
-    exit: {
-      type: "easing",
-      duration: 0.3,
-      ease: [0.7, 0.3, 0.3, 0.91], // CSS `ease`
-      __mode: "easing",
-    },
-    "enter.__mode": "easing",
-    "exit.__mode": "easing",
-  })
+  const dial = useDialogAnimationsDials()
 
   const enterSeconds = (dial.enter.type === "easing" ? dial.enter.duration : 0.2).toFixed(3).replace(/\.?0+$/, "")
   const exitSeconds = (dial.exit.type === "easing" ? dial.exit.duration : 0.15).toFixed(3).replace(/\.?0+$/, "")
@@ -118,14 +103,6 @@ export function DialogAnimationsDialKitDev() {
   return (
     <style>
       {`
-        /* DialKit select dropdown is portaled within the DialKit root. */
-        /* Your DialKit panel has overflow-y:auto; that can clip the */
-        /* dropdown list so it looks "empty" even when open.        */
-        .dialkit-panel,
-        .dialkit-panel-inner {
-          overflow: visible !important;
-        }
-
         :root {
           --dialkit-dialog-enter-duration: ${enterDurationMs}ms;
           --dialkit-dialog-exit-duration: ${exitDurationMs}ms;

@@ -1,15 +1,17 @@
 {
   "name": "curator-extension",
-  "version": "1.0.2",
+  "version": "1.0.5",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "package": "npm run build && cd dist && zip -r ../curator-extension.zip .",
     "preview": "vite preview"
   },
   "dependencies": {
     "@fontsource/host-grotesk": "^5.2.8",
+    "@lisse/react": "^0.5.2",
     "@radix-ui/react-select": "^2.1.4",
     "@supabase/supabase-js": "^2.49.0",
     "clsx": "^2.1.1",

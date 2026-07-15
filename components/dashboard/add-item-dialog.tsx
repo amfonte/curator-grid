@@ -5,7 +5,7 @@ import React from "react"
 import { useState, useRef, useCallback } from "react"
 import dynamic from "next/dynamic"
 import { motion } from "motion/react"
-import { useDialKit } from "dialkit"
+import { useEmptyCanvasDocsDials } from "@/lib/dialkit/use-empty-canvas-docs-dials"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import type { Board, Item } from "@/lib/types"
 import { createClient } from "@/lib/supabase/client"
@@ -202,38 +202,7 @@ export function AddItemDialog({
   const [docIconHovered, setDocIconHovered] = useState(false)
   const dropzoneErrorJiggleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const previewObjectUrlRef = useRef<string | null>(null)
-  const docsDial = useDialKit("Empty canvas docs", {
-    usePhysics: false,
-    enter: {
-      type: "easing",
-      duration: 0.3,
-      ease: [0.44, 0.24, 0.11, 1.77],
-      __mode: "easing",
-    },
-    leave: {
-      type: "easing",
-      duration: 0.25,
-      ease: [0.54, 0.01, 0.32, 1],
-      __mode: "easing",
-    },
-    physics: {
-      type: "spring",
-      stiffness: 820,
-      damping: 23,
-      mass: 0.8,
-      __mode: "advanced",
-    },
-    frontDoc: {
-      hoverX: -6,
-      hoverY: 0,
-      hoverRotate: -5,
-    },
-    backDoc: {
-      hoverX: 5,
-      hoverY: -15,
-      hoverRotate: 10,
-    },
-  })
+  const docsDial = useEmptyCanvasDocsDials()
   const docsAreSpread = isDragActive || docIconHovered
   const docsTransition = docsDial.usePhysics
     ? {
@@ -854,7 +823,7 @@ export function AddItemDialog({
             {/* Footer button: shown only when we can actually "Save"/submit. */}
             {activeTab === "url" || inImageSaveStage ? (
               <Button
-                className="w-full rounded-[48px] px-5 py-3 disabled:!opacity-50"
+                className={cn("w-full rounded-[48px] px-5 py-3", loading && "cta-disabled-loading")}
                 disabled={loading || (activeTab === "url" ? !url.trim() : !currentFile)}
                 onClick={() => {
                   if (activeTab === "url") {

@@ -5,10 +5,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select"
+import { CtaTextButton } from "../components/CtaTextButton"
 import type { ExtensionBoard } from "../lib/messaging"
+import { cn } from "../lib/utils"
 import { isSaveableTabUrl } from "../lib/url"
 import { VIEWPORT_OPTIONS, type ViewportSize } from "../lib/viewports"
 import { FormField } from "./FormField"
+import { TAB_CONTENT_HEIGHT_PX } from "./tab-layout"
 
 type UrlTabShellProps = {
   url: string
@@ -43,7 +46,7 @@ export function UrlTabShell({
   const canSave = isSaveableTabUrl(url) && Boolean(selectedBoard) && !saving
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5" style={{ minHeight: TAB_CONTENT_HEIGHT_PX }}>
       <div className="flex min-w-0 flex-col gap-[8px]">
         <p className="truncate text-base font-normal leading-6 text-foreground">{displayUrl}</p>
         {subtitle ? (
@@ -85,9 +88,13 @@ export function UrlTabShell({
         <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{saveError}</div>
       ) : null}
 
-      <button type="button" className="cta-primary w-full" disabled={!canSave} onClick={onSave}>
+      <CtaTextButton
+        className={cn("w-full", saving && "cta-disabled-loading")}
+        disabled={!canSave}
+        onClick={onSave}
+      >
         {saving ? "Saving…" : "Add URL"}
-      </button>
+      </CtaTextButton>
     </div>
   )
 }

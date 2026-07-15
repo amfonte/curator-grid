@@ -1,18 +1,11 @@
 "use client"
 
-import { useDialKit } from "dialkit"
+import { useAddItemToggleDials } from "@/lib/dialkit/use-add-item-toggle-dials"
 
 export function AddItemDialKitTuner() {
   // DialKit panels are registered via hooks; we keep this logic isolated so
   // production mounts don't pull DialKit UI.
-  useDialKit("Add item toggle", {
-    spring: {
-      type: "spring",
-      visualDuration: 0.2,
-      bounce: 0.2,
-    },
-  })
+  useAddItemToggleDials()
 
   return null
 }
-

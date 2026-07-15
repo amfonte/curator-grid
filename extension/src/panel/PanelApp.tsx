@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react"
+import { CtaTextButton } from "../components/CtaTextButton"
 import { fetchUrlMetadata } from "../lib/api"
 import {
   bootstrapSkeletonFromBoards,
@@ -25,8 +26,10 @@ import { NoCollectionsSkeleton } from "./NoCollectionsSkeleton"
 import { NoCollectionsView } from "./NoCollectionsView"
 import { PanelContentStage } from "./PanelContentStage"
 import { PanelShell } from "./PanelShell"
+import { PanelTabCrossfade } from "./PanelTabCrossfade"
 import { SaveSuccessView } from "./SaveSuccessView"
 import { syncStackEntrancePlayedUrls } from "./stack-image-entrance"
+import { TAB_CONTENT_HEIGHT_PX } from "./tab-layout"
 import { UrlImageToggle } from "./UrlImageToggle"
 import { UrlTabShell } from "./UrlTabShell"
 import { UrlTabSkeleton } from "./UrlTabSkeleton"
@@ -371,6 +374,11 @@ export function PanelApp({ onClose, initialHint }: PanelAppProps) {
 
   const tabSuccess = successByTab[activeTab]
   const isSuccess = tabSuccess != null
+  const targetContentHeight =
+    !isSuccess &&
+    ((activeTab === "url" && !saveError) || (activeTab === "image" && selectedImages.length === 0))
+      ? TAB_CONTENT_HEIGHT_PX
+      : undefined
 
   if (isBootstrapping) {
     if (bootstrapSkeleton === "auth") {
@@ -395,8 +403,15 @@ export function PanelApp({ onClose, initialHint }: PanelAppProps) {
           <UrlImageToggle activeTab={activeTab} onChange={handleTabChange} />
           <PanelContentStage
             isSuccess={false}
+            targetHeight={TAB_CONTENT_HEIGHT_PX}
             formMeasureKey={`bootstrap-${activeTab}`}
-            form={activeTab === "url" ? <UrlTabSkeleton /> : <ImageTabSkeleton />}
+            form={
+              <PanelTabCrossfade
+                activeTab={activeTab}
+                urlContent={<UrlTabSkeleton />}
+                imageContent={<ImageTabSkeleton />}
+              />
+            }
             success={null}
           />
         </div>
@@ -423,13 +438,9 @@ export function PanelApp({ onClose, initialHint }: PanelAppProps) {
             <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
               {boardsError}
             </div>
-            <button
-              type="button"
-              className="cta-primary w-full"
-              onClick={() => void enterMainView()}
-            >
+            <CtaTextButton className="w-full" onClick={() => void enterMainView()}>
               Try again
-            </button>
+            </CtaTextButton>
           </div>
         ) : (
           <NoCollectionsView />
@@ -445,10 +456,12 @@ export function PanelApp({ onClose, initialHint }: PanelAppProps) {
 
         <PanelContentStage
           isSuccess={isSuccess}
+          targetHeight={targetContentHeight}
           formMeasureKey={activeTab}
           form={
-            <>
-              <div hidden={activeTab !== "url"}>
+            <PanelTabCrossfade
+              activeTab={activeTab}
+              urlContent={
                 <UrlTabShell
                   url={tabUrl}
                   title={tabTitle}
@@ -462,8 +475,8 @@ export function PanelApp({ onClose, initialHint }: PanelAppProps) {
                   onBoardChange={setSelectedBoard}
                   onSave={() => void handleSaveUrl()}
                 />
-              </div>
-              <div hidden={activeTab !== "image"}>
+              }
+              imageContent={
                 <ImageTabShell
                   selectedImages={selectedImages}
                   boards={boards}
@@ -475,8 +488,8 @@ export function PanelApp({ onClose, initialHint }: PanelAppProps) {
                   onRemoveImage={handleRemoveImage}
                   onSave={() => void handleSaveImages()}
                 />
-              </div>
-            </>
+              }
+            />
           }
           success={
             tabSuccess ? (

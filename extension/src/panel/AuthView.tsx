@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from "react"
+import { CtaTextButton } from "../components/CtaTextButton"
 import { curatorWebUrl } from "../lib/config"
+import { cn } from "../lib/utils"
 
 type AuthViewProps = {
   error: string | null
@@ -23,7 +25,7 @@ export function AuthView({ error, onSignIn }: AuthViewProps) {
       <img
         src={chrome.runtime.getURL("assets/curator-logo-lockup.svg")}
         alt="Curator"
-        className="h-[80px] w-[75px] object-contain"
+        className="curator-logo-vector h-[80px] w-[75px] shrink-0 object-contain"
       />
 
       <p className="mt-6 text-center text-base text-foreground">
@@ -73,9 +75,9 @@ export function AuthView({ error, onSignIn }: AuthViewProps) {
           </div>
         </div>
 
-        <button type="submit" className="cta-primary w-full" disabled={loading}>
+        <CtaTextButton type="submit" className={cn("w-full", loading && "cta-disabled-loading")} disabled={loading}>
           {loading ? "Signing in…" : "Sign in"}
-        </button>
+        </CtaTextButton>
       </form>
 
       <p className="mt-5 text-center text-base leading-6 text-muted-foreground">

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import type { User } from "@supabase/supabase-js"
 import type { Item, Board } from "@/lib/types"
 import { motion } from "motion/react"
-import { useDialKit } from "dialkit"
+import { useEmptyCanvasDocsDials } from "@/lib/dialkit/use-empty-canvas-docs-dials"
 import { TopNav } from "@/components/dashboard/top-nav"
 import { MasonryGrid } from "@/components/dashboard/masonry-grid"
 import { AddItemDialog } from "@/components/dashboard/add-item-dialog"
@@ -260,38 +260,7 @@ export function DashboardShell({
     setDropzoneError(err)
     setDropzoneErrorJiggleNonce((n) => n + 1)
   }, [])
-  const docsDial = useDialKit("Empty canvas docs", {
-    usePhysics: false,
-    enter: {
-      type: "easing",
-      duration: 0.3,
-      ease: [0.44, 0.24, 0.11, 1.77],
-      __mode: "easing",
-    },
-    leave: {
-      type: "easing",
-      duration: 0.25,
-      ease: [0.54, 0.01, 0.32, 1],
-      __mode: "easing",
-    },
-    physics: {
-      type: "spring",
-      stiffness: 820,
-      damping: 23,
-      mass: 0.8,
-      __mode: "advanced",
-    },
-    frontDoc: {
-      hoverX: -6,
-      hoverY: 0,
-      hoverRotate: -5,
-    },
-    backDoc: {
-      hoverX: 5,
-      hoverY: -15,
-      hoverRotate: 10,
-    },
-  })
+  const docsDial = useEmptyCanvasDocsDials()
 
   const docsAreSpread = emptyCanvasDragActive || docIconHovered
   const docsTransition = docsDial.usePhysics

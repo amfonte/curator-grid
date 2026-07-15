@@ -206,75 +206,224 @@
   stroke-linejoin: round;
 }
 
+/* Animatable gradient colors for CTA hover (smooth transition via @property). */
+@property --cta-primary-top {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #585958;
+}
+@property --cta-primary-bottom {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #262626;
+}
+@property --cta-secondary-top {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #ffffff;
+}
+@property --cta-secondary-bottom {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #dbdbdb;
+}
+
+/* CTA Button styling — see docs/CTA-button-styling.md (keep in sync with app/globals.css) */
 button.cta-primary,
 .cta-primary {
-  display: inline-flex;
-  min-height: 48px;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  border-radius: 48px;
-  border: 2px solid var(--gray-100);
-  background: linear-gradient(to bottom, var(--gray-80), var(--gray-100));
-  box-shadow:
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.35),
-    inset 0 7px 6px rgba(38, 38, 38, 1),
-    inset 0 -5px 6px rgba(255, 255, 255, 0.25);
-  color: var(--gray-10);
-  font-family: inherit;
-  font-size: 16px;
+  --cta-border: var(--gray-100);
+  --cta-primary-top: var(--gray-80);
+  --cta-primary-bottom: var(--gray-100);
+  background: linear-gradient(to bottom, var(--cta-primary-top), var(--cta-primary-bottom)) !important;
+  border: 2px solid var(--cta-border);
+  color: var(--gray-10) !important;
+  font-family: var(--font-sans);
+  font-size: 1rem;
   font-weight: 500;
+  line-height: 1.5rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, --cta-primary-top 0.15s ease, --cta-primary-bottom 0.15s ease !important;
+}
+
+button.cta-primary:hover,
+.cta-primary:hover {
   cursor: pointer;
+  --cta-primary-top: var(--gray-90);
+  --cta-primary-bottom: var(--gray-100);
+}
+
+button.cta-primary:active,
+.cta-primary:active {
+  transform: scale(0.97);
+}
+
+button.cta-primary:not(.cta-icon),
+.cta-primary:not(.cta-icon) {
+  border-radius: 48px;
+  box-shadow: inset 0px 2.5px 0px 0px rgba(255, 255, 255, 0.35), inset 0px 7px 6px 0px rgba(38, 38, 38, 1), inset 0px -5px 6px 0px rgba(255, 255, 255, 0.25);
+}
+
+div:has(> [data-slot="smooth-corners"].cta-primary),
+div:has(> [data-slot="smooth-corners"].cta-secondary) {
+  display: inline-flex;
+  max-width: 100%;
   transition: transform 0.15s ease;
 }
 
-button.cta-primary:hover:not(:disabled),
-.cta-primary:hover:not(:disabled) {
-  background: linear-gradient(to bottom, var(--gray-90), var(--gray-100));
+div:has(> [data-slot="smooth-corners"].w-full) {
+  display: flex;
+  width: 100%;
+  border-radius: 9999px;
 }
 
-button.cta-primary:disabled,
-.cta-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+div:has(> [data-slot="smooth-corners"].cta-primary:active),
+div:has(> [data-slot="smooth-corners"].cta-secondary:active) {
+  transform: scale(0.97);
+}
+
+div:has(> [data-slot="smooth-corners"].cta-primary.w-full:active),
+div:has(> [data-slot="smooth-corners"].cta-secondary.w-full:active) {
+  transform: scale(0.99);
+}
+
+[data-slot="smooth-corners"].cta-primary:active,
+[data-slot="smooth-corners"].cta-secondary:active {
+  transform: none !important;
+}
+
+[data-slot="smooth-corners"].cta-primary,
+[data-slot="smooth-corners"].cta-secondary {
+  position: relative;
+  isolation: isolate;
+  border: none !important;
+  border-radius: 9999px;
+  transition: transform 0.15s ease, --cta-primary-top 0.15s ease, --cta-primary-bottom 0.15s ease, --cta-secondary-top 0.15s ease, --cta-secondary-bottom 0.15s ease !important;
+}
+
+[data-slot="smooth-corners"].cta-primary {
+  box-shadow:
+    inset 0 2.5px 0 rgba(255, 255, 255, 0.35),
+    inset 0 7px 6px rgba(38, 38, 38, 1),
+    inset 0 -5px 6px rgba(255, 255, 255, 0.25) !important;
+}
+
+[data-slot="smooth-corners"].cta-secondary {
+  box-shadow:
+    inset 0 2.5px 0 rgba(255, 255, 255, 0.7),
+    inset 0 8px 6px var(--gray-40),
+    inset 0 -6px 6px rgba(255, 255, 255, 0.8) !important;
+}
+
+[data-slot="smooth-corners"].cta-primary:active {
+  box-shadow:
+    inset 0 2.5px 0 rgba(255, 255, 255, 0.35),
+    inset 0 7px 6px rgba(38, 38, 38, 1),
+    inset 0 -5px 6px rgba(255, 255, 255, 0.25) !important;
+}
+
+[data-slot="smooth-corners"].cta-secondary:active {
+  box-shadow:
+    inset 0 2.5px 0 rgba(255, 255, 255, 0.7),
+    inset 0 8px 6px var(--gray-40),
+    inset 0 -6px 6px rgba(255, 255, 255, 0.8) !important;
+}
+
+[data-slot="smooth-corners"].cta-primary[data-state="pending"],
+[data-slot="smooth-corners"].cta-secondary[data-state="pending"] {
+  opacity: 0;
+}
+
+[data-slot="smooth-corners"].cta-primary[data-state="ready"],
+[data-slot="smooth-corners"].cta-secondary[data-state="ready"] {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-slot="smooth-corners"].cta-primary[data-state="ready"],
+  [data-slot="smooth-corners"].cta-secondary[data-state="ready"] {
+    transition: opacity 100ms ease;
+  }
 }
 
 button.cta-secondary,
 .cta-secondary {
-  display: inline-flex;
-  min-height: 48px;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  border-radius: 48px;
-  border: 2px solid var(--gray-50);
-  background: linear-gradient(to bottom, var(--gray-10), var(--gray-50));
-  box-shadow:
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.7),
-    inset 0 8px 6px var(--gray-40),
-    inset 0 -6px 6px rgba(255, 255, 255, 0.8);
-  color: var(--gray-90);
-  font-family: inherit;
-  font-size: 16px;
+  --cta-border: var(--gray-50);
+  --cta-secondary-top: var(--gray-10);
+  --cta-secondary-bottom: var(--gray-50);
+  background: linear-gradient(to bottom, var(--cta-secondary-top), var(--cta-secondary-bottom)) !important;
+  border: 2px solid var(--cta-border);
+  color: var(--gray-90) !important;
+  font-family: var(--font-sans);
+  font-size: 1rem;
   font-weight: 500;
+  line-height: 1.5rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, --cta-secondary-top 0.15s ease, --cta-secondary-bottom 0.15s ease !important;
+}
+
+button.cta-secondary:not(.cta-icon),
+.cta-secondary:not(.cta-icon) {
+  border-radius: 48px;
+  box-shadow: inset 0 2.5px 0 rgba(255, 255, 255, 0.7), inset 0 8px 6px var(--gray-40), inset 0 -6px 6px rgba(255, 255, 255, 0.8);
+}
+
+button.cta-secondary:hover,
+.cta-secondary:hover {
   cursor: pointer;
-  transition: transform 0.15s ease;
+  --cta-secondary-top: var(--gray-30);
+  --cta-secondary-bottom: var(--gray-50);
 }
 
-button.cta-secondary:hover:not(:disabled),
-.cta-secondary:hover:not(:disabled) {
-  background: linear-gradient(to bottom, var(--gray-30), var(--gray-50));
+button.cta-secondary:active,
+.cta-secondary:active {
+  transform: scale(0.97);
 }
 
-button.cta-secondary:active:not(:disabled),
-.cta-secondary:active:not(:disabled) {
+button.cta-primary.w-full:active:not([data-slot="smooth-corners"]),
+.cta-primary.w-full:active:not([data-slot="smooth-corners"]),
+button.cta-secondary.w-full:active:not([data-slot="smooth-corners"]),
+.cta-secondary.w-full:active:not([data-slot="smooth-corners"]) {
   transform: scale(0.99);
 }
 
-button.cta-secondary:disabled,
-.cta-secondary:disabled {
+button.cta-primary:disabled:not(.cta-disabled-loading),
+.cta-primary:disabled:not(.cta-disabled-loading),
+button.cta-secondary:disabled:not(.cta-disabled-loading),
+.cta-secondary:disabled:not(.cta-disabled-loading),
+[data-slot="smooth-corners"].cta-primary:disabled,
+[data-slot="smooth-corners"].cta-secondary:disabled {
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+div:has(> [data-slot="smooth-corners"].cta-primary:disabled:not(.cta-disabled-loading)),
+div:has(> [data-slot="smooth-corners"].cta-secondary:disabled:not(.cta-disabled-loading)) {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+button.cta-primary:disabled:not(.cta-disabled-loading):not([data-slot="smooth-corners"]),
+.cta-primary:disabled:not(.cta-disabled-loading):not([data-slot="smooth-corners"]),
+button.cta-secondary:disabled:not(.cta-disabled-loading):not([data-slot="smooth-corners"]),
+.cta-secondary:disabled:not(.cta-disabled-loading):not([data-slot="smooth-corners"]) {
+  opacity: 0.5;
+}
+
+button.cta-primary:disabled.cta-disabled-loading,
+.cta-primary:disabled.cta-disabled-loading,
+button.cta-secondary:disabled.cta-disabled-loading,
+.cta-secondary:disabled.cta-disabled-loading,
+div:has(> [data-slot="smooth-corners"].cta-primary:disabled.cta-disabled-loading),
+div:has(> [data-slot="smooth-corners"].cta-secondary:disabled.cta-disabled-loading) {
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+@layer utilities {
+  button.cta-primary:disabled,
+  .cta-primary:disabled,
+  button.cta-secondary:disabled,
+  .cta-secondary:disabled {
+    opacity: 1;
+  }
 }
 
 .link-wavy-underline {
@@ -316,4 +465,9 @@ button.cta-secondary:disabled,
   transform: scaleX(1);
   transform-origin: left;
   transition-delay: 200ms;
+}
+
+.curator-logo-vector {
+  shape-rendering: geometricPrecision;
+  max-width: none;
 }

@@ -9,6 +9,7 @@ import { CuratorLogoLockup } from "@/components/icons/curator-logo"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { FormField } from "@/components/ui/form-field"
+import { cn } from "@/lib/utils"
 
 export default function ForgotPasswordPage() {
   const [error, setError] = useState<string | null>(null)
@@ -67,7 +68,7 @@ export default function ForgotPasswordPage() {
                 />
               </FormField>
 
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className={cn("w-full", loading && "cta-disabled-loading")} disabled={loading}>
                 {loading ? "Sending…" : "Send reset link"}
               </Button>
             </form>

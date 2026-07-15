@@ -1,19 +1,13 @@
 "use client"
 
 import React from "react"
-import { useDialKit } from "dialkit"
+import { useAddItemToggleDials } from "@/lib/dialkit/use-add-item-toggle-dials"
 import { motion } from "motion/react"
 
 type ActiveTab = "url" | "image"
 
 export function AddItemTabsIndicatorDev({ activeTab }: { activeTab: ActiveTab }) {
-  const toggleDial = useDialKit("Add item toggle", {
-    spring: {
-      type: "spring",
-      visualDuration: 0.2,
-      bounce: 0.2,
-    },
-  })
+  const toggleDial = useAddItemToggleDials()
 
   return (
     <motion.div
