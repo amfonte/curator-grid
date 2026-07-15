@@ -40,8 +40,8 @@ export function getCtaSmoothCornersProps(
       radius: ctaTextCornerRadius(size),
       smoothing: CTA_SMOOTH_CORNERS.smoothing,
     },
-    // middleBorder sits on the squircle edge (matches CSS border placement).
-    middleBorder: isSecondary ? CTA_SECONDARY_BORDER : CTA_PRIMARY_BORDER,
+    // innerBorder draws the stroke inside the squircle edge (CSS border-box inset).
+    innerBorder: isSecondary ? CTA_SECONDARY_BORDER : CTA_PRIMARY_BORDER,
     autoEffects: false as const,
   }
 }

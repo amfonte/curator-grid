@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { DASHBOARD_FLOATING_CONTROLS_BOTTOM_PX } from "@/lib/dashboard/floating-controls"
 import { CuratorLogo } from "@/components/icons/curator-logo"
 import { Plus, Search, User as UserIcon, X } from "lucide-react"
 
@@ -249,14 +250,19 @@ export function TopNav(props: TopNavProps) {
             {userMenu}
           </div>
         </header>
-        <Button
-          variant="default"
-          size="lg"
-          onClick={onAddClick}
-          className="fixed bottom-8 left-1/2 z-40 hidden -translate-x-1/2 max-sm:inline-flex"
+        <div
+          className="pointer-events-none fixed inset-x-0 z-40 flex justify-center sm:hidden"
+          style={{ bottom: DASHBOARD_FLOATING_CONTROLS_BOTTOM_PX }}
         >
-          Add collection
-        </Button>
+          <Button
+            variant="default"
+            size="lg"
+            onClick={onAddClick}
+            className="pointer-events-auto"
+          >
+            Add collection
+          </Button>
+        </div>
       </>
     )
   }

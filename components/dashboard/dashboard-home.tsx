@@ -359,7 +359,7 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
         showAddCollection={hasCollections}
       />
 
-      <main className="flex-1 px-4 pb-4 pt-[144px]">
+      <main className="flex-1 px-4 pb-4 pt-[128px] md:pt-[156px]">
         {!hasCollections ? (
           <div
             className={`flex flex-col ${
