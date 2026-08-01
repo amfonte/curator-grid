@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { SuppressParamsEnumerationWarning } from "@/components/suppress-params-enumeration-warning"
 import { DialKitDevMount } from "@/components/DialKitDevMount"
+import { SmokyDissolveDefs } from "@/components/ui/smoky-dissolve-defs"
 import "./globals.css"
 
 const hostGrotesk = Host_Grotesk({
@@ -83,6 +84,7 @@ export default function RootLayout({
         className={`${hostGrotesk.variable} min-h-dvh font-sans antialiased`}
       >
         <SuppressParamsEnumerationWarning />
+        <SmokyDissolveDefs />
         {children}
         <Analytics />
         <SpeedInsights />

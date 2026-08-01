@@ -13,6 +13,8 @@ import { CreateCollectionFolder } from "@/components/dashboard/create-collection
 import { ExtensionPromoToast } from "@/components/dashboard/extension-promo-toast"
 import { ScaledFolderFrame } from "@/components/dashboard/scaled-folder-frame"
 import { parseFolderAppearance } from "@/lib/folder-customization"
+import { SMOKY_DISSOLVE_MS } from "@/lib/animation/smoky-dissolve"
+import { cn } from "@/lib/utils"
 
 const QUOTE_CYCLE_MS = 6000
 
@@ -78,8 +80,7 @@ const QUOTE_TRANSITION_MS = 450
 const EXIT_MS = 400
 const FOLDER_ENTER_DELAY_MS = 0
 const FOLDER_ENTER_MS = 380
-// Cancel flow: poof animation (30% faster than enter), then quotes fade in
-const POOF_MS = 320
+// Cancel flow: smoky dissolve, then quotes fade in
 const QUOTES_ENTER_MS = Math.round(EXIT_MS * 0.7)
 
 interface DashboardHomeProps {
@@ -310,7 +311,7 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
         setNewBoardName("")
         setPhase("idle")
       }
-      cancelTimeoutRef.current = setTimeout(doSnap, POOF_MS)
+      cancelTimeoutRef.current = setTimeout(doSnap, SMOKY_DISSOLVE_MS)
     } else {
       cancelTimeoutRef.current = setTimeout(() => {
         setShowCreateForm(false)
@@ -319,7 +320,7 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
         setQuotesRevealed(false)
         setQuotesEnteringFromCancel(true)
         cancelTimeoutRef.current = null
-      }, POOF_MS)
+      }, SMOKY_DISSOLVE_MS)
     }
   }
 
@@ -430,7 +431,10 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
             {/* Phase 2: folder + form; when cancelling, folder graphic poofs (no slide out) */}
             {(phase === "showing-folder" || phase === "cancelling") && (
               <div
-                className="w-full max-w-[335px] flex flex-col items-stretch self-start"
+                className={cn(
+                  "w-full max-w-[335px] flex flex-col items-stretch self-start overflow-visible",
+                  phase === "cancelling" && "relative z-10",
+                )}
                 style={{
                   transition:
                     phase === "cancelling"
@@ -460,7 +464,10 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
             <div
               key="collections-grid"
               ref={gridWrapperRef}
-              className="min-w-0 flex-1"
+              className={cn(
+                "min-w-0 flex-1",
+                showCreateForm && "overflow-visible",
+              )}
             >
               {userBoards.length === 0 && dashboardSearch ? (
                 <div className="flex min-h-[200px] items-center justify-center">
@@ -471,7 +478,7 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
               ) : (
                 <ul
                   ref={gridListRef}
-                  className="grid"
+                  className={cn("grid", showCreateForm && "overflow-visible")}
                   style={{
                     gap: "20px",
                     gridTemplateColumns: "repeat(auto-fill, minmax(335px, 1fr))",
@@ -480,7 +487,10 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
                   {showCreateForm && (phase === "showing-folder" || phase === "cancelling") && (
                     <li
                       ref={createSlotRef}
-                      className="min-w-0 w-full"
+                      className={cn(
+                        "min-w-0 w-full overflow-visible",
+                        phase === "cancelling" && "relative z-10",
+                      )}
                       style={{
                         transition:
                           phase === "cancelling"

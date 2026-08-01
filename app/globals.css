@@ -548,22 +548,99 @@
   }
 }
 
-/* macOS-style "poof" — scale + fade + blur for folder cancel */
-@keyframes poof {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-    filter: blur(0);
-  }
-  100% {
-    transform: scale(1.1);
-    opacity: 0;
-    filter: blur(12px);
-  }
+/*
+ * Smoky dissolve — rAF-driven via .smoky-dissolve-shell-active (--smoky-spread / --smoky-fade).
+ * Spread erodes edges first; opacity holds until ~38% of the timeline.
+ */
+.smoky-dissolve-shell {
+  transform-origin: 50% 42%;
 }
 
-.animate-poof {
-  animation: poof 320ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+.smoky-dissolve-shell-active {
+  pointer-events: none;
+  opacity: calc(1 - var(--smoky-fade, 0));
+  transform: translate3d(
+      0,
+      calc(var(--smoky-spread, 0) * var(--smoky-drift-y, 7%)),
+      0
+    )
+    scale(calc(1 + var(--smoky-spread, 0) * var(--smoky-scale-max, 0.15)));
+  filter: url(#smoky-dissolve-filter)
+    blur(calc(var(--smoky-spread, 0) * var(--smoky-spread, 0) * var(--smoky-blur-max, 22px)));
+  -webkit-mask-image: var(--smoky-dissolve-mask);
+  mask-image: var(--smoky-dissolve-mask);
+  -webkit-mask-position: center
+    calc(50% + var(--smoky-spread, 0) * var(--smoky-mask-drift-y, 8%));
+  mask-position: center calc(50% + var(--smoky-spread, 0) * var(--smoky-mask-drift-y, 8%));
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: calc(100% + var(--smoky-spread, 0) * var(--smoky-mask-grow, 260%))
+    calc(100% + var(--smoky-spread, 0) * var(--smoky-mask-grow, 260%));
+  mask-size: calc(100% + var(--smoky-spread, 0) * var(--smoky-mask-grow, 260%))
+    calc(100% + var(--smoky-spread, 0) * var(--smoky-mask-grow, 260%));
+  will-change: transform, opacity;
+}
+
+.smoky-dissolve-shell--toast {
+  --smoky-bleed-x: 12%;
+  --smoky-bleed-top: 3rem;
+  --smoky-bleed-bottom: 2.5rem;
+  --smoky-drift-y: 5%;
+  --smoky-scale-max: 0.11;
+  --smoky-blur-max: 18px;
+  --smoky-mask-grow: 220%;
+  --smoky-mask-drift-y: 6%;
+  transform-origin: 50% 40%;
+  width: calc(100% + 2 * var(--smoky-bleed-x));
+  margin-left: calc(-1 * var(--smoky-bleed-x));
+  margin-right: calc(-1 * var(--smoky-bleed-x));
+  padding-top: var(--smoky-bleed-top);
+  padding-bottom: var(--smoky-bleed-bottom);
+  margin-top: calc(-1 * var(--smoky-bleed-top));
+  margin-bottom: calc(-1 * var(--smoky-bleed-bottom));
+}
+
+.smoky-dissolve-shell--toast .smoky-dissolve-content {
+  width: 80.645%;
+  margin-inline: auto;
+}
+
+/*
+ * Collection cancel — expanded shell for horizontal/vertical paint bleed.
+ * Inner .smoky-dissolve-content stays grid width (78.125% of shell = 100% of cell).
+ */
+.smoky-dissolve-shell--collection {
+  --smoky-bleed-x: 14%;
+  --smoky-bleed-top: 3.75rem;
+  --smoky-bleed-bottom: 3.25rem;
+  --smoky-drift-y: 7%;
+  --smoky-scale-max: 0.15;
+  --smoky-blur-max: 22px;
+  --smoky-mask-grow: 260%;
+  --smoky-mask-drift-y: 8%;
+  transform-origin: 50% 36%;
+  width: calc(100% + 2 * var(--smoky-bleed-x));
+  margin-left: calc(-1 * var(--smoky-bleed-x));
+  margin-right: calc(-1 * var(--smoky-bleed-x));
+  padding-top: var(--smoky-bleed-top);
+  padding-bottom: var(--smoky-bleed-bottom);
+  margin-top: calc(-1 * var(--smoky-bleed-top));
+  margin-bottom: calc(-1 * var(--smoky-bleed-bottom));
+}
+
+.smoky-dissolve-shell--collection .smoky-dissolve-content {
+  width: 78.125%;
+  margin-inline: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .smoky-dissolve-shell-active {
+    opacity: 0;
+    transform: none;
+    filter: none;
+    -webkit-mask: none;
+    mask: none;
+  }
 }
 
 /* Extension promo toast — fade in and rise after page load */
@@ -588,25 +665,11 @@
   will-change: transform, opacity;
 }
 
-.extension-promo-toast.extension-promo-toast-poofing {
-  animation: extension-promo-toast-poof 320ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+.extension-promo-toast.extension-promo-toast-dissolving {
   opacity: 1;
-  transform: translateY(0);
-  filter: blur(0);
-  will-change: transform, opacity, filter;
-}
-
-@keyframes extension-promo-toast-poof {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-    filter: blur(0);
-  }
-  100% {
-    transform: scale(1.05);
-    opacity: 0;
-    filter: blur(6px);
-  }
+  transform: none;
+  animation: none;
+  pointer-events: none;
 }
 
 .extension-promo-toast-dismiss {
@@ -632,6 +695,10 @@
     animation: none;
     opacity: 1;
     transform: none;
+  }
+
+  .extension-promo-toast.extension-promo-toast-dissolving {
+    opacity: 1;
   }
 
   .extension-promo-toast-dismiss {

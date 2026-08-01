@@ -16,9 +16,10 @@ import {
   isExtensionPromoDismissed,
 } from "@/lib/extension/promo-toast"
 import { getChromeExtensionStoreUrl } from "@/lib/extension/store-url"
+import { SmokyDissolveShell } from "@/components/ui/smoky-dissolve-shell"
+import { SMOKY_DISSOLVE_MS } from "@/lib/animation/smoky-dissolve"
 
 const REVEAL_DELAY_MS = 650
-const POOF_MS = 320
 const DISMISS_SHOW_DELAY_MS = 120
 const TOAST_MAX_WIDTH_PX = 363
 const PAGE_MARGIN_PX = 16
@@ -76,25 +77,25 @@ export function ExtensionPromoToast({
   const storeUrl = getChromeExtensionStoreUrl()
   const [suppressed, setSuppressed] = useState<boolean | null>(null)
   const [revealed, setRevealed] = useState(false)
-  const [poofing, setPoofing] = useState(false)
+  const [dissolving, setDissolving] = useState(false)
   const [dismissVisible, setDismissVisible] = useState(false)
   const dismissShowTimerRef = useRef<number | null>(null)
   const maxWidth = useToastMaxWidth(suppressed === false)
 
   const suppressPromo = useCallback(
     (options?: { animate?: boolean }) => {
-      if (suppressed === true || poofing) return
+      if (suppressed === true || dissolving) return
 
-      const shouldPoof = options?.animate && revealed
-      if (shouldPoof) {
-        setPoofing(true)
-        window.setTimeout(() => setSuppressed(true), POOF_MS)
+      const shouldDissolve = options?.animate && revealed
+      if (shouldDissolve) {
+        setDissolving(true)
+        window.setTimeout(() => setSuppressed(true), SMOKY_DISSOLVE_MS)
         return
       }
 
       setSuppressed(true)
     },
-    [poofing, revealed, suppressed],
+    [dissolving, revealed, suppressed],
   )
 
   useEffect(() => {
@@ -183,8 +184,8 @@ export function ExtensionPromoToast({
   }, [])
 
   const handleDismiss = useCallback(() => {
-    if (poofing) return
-    setPoofing(true)
+    if (dissolving) return
+    setDissolving(true)
     window.setTimeout(() => {
       try {
         localStorage.setItem(EXTENSION_PROMO_DISMISSED_KEY, "1")
@@ -192,14 +193,17 @@ export function ExtensionPromoToast({
         // Ignore storage failures; still hide for this session.
       }
       setSuppressed(true)
-    }, POOF_MS)
-  }, [poofing])
+    }, SMOKY_DISSOLVE_MS)
+  }, [dissolving])
 
   if (suppressed !== false || maxWidth <= 0) return null
 
   return (
     <div
-      className="pointer-events-none fixed right-4 z-[25] hidden md:block"
+      className={cn(
+        "pointer-events-none fixed right-4 z-[25] hidden overflow-visible md:block",
+        dissolving && "z-[30]",
+      )}
       style={{
         bottom,
         transition: DASHBOARD_FLOATING_CONTROLS_BOTTOM_TRANSITION,
@@ -207,9 +211,9 @@ export function ExtensionPromoToast({
     >
       <div
         className={cn(
-          "extension-promo-toast pointer-events-auto relative pt-[48px]",
-          !poofing && revealed && "extension-promo-toast-revealed",
-          poofing && "extension-promo-toast-poofing pointer-events-none",
+          "extension-promo-toast pointer-events-auto relative overflow-visible",
+          !dissolving && revealed && "extension-promo-toast-revealed",
+          dissolving && "extension-promo-toast-dissolving",
         )}
         style={{ maxWidth, width: maxWidth }}
         onMouseEnter={handleHostEnter}
@@ -221,31 +225,35 @@ export function ExtensionPromoToast({
           }
         }}
       >
-        <button
-          type="button"
-          onClick={handleDismiss}
-          disabled={poofing}
-          tabIndex={dismissVisible ? 0 : -1}
-          className={cn(
-            "extension-promo-toast-dismiss absolute right-0 top-0 flex size-10 items-center justify-center rounded-full bg-card disabled:pointer-events-none",
-            dismissVisible && !poofing && "extension-promo-toast-dismiss-visible",
-          )}
-          aria-label="Dismiss extension promotion"
-          aria-hidden={!dismissVisible}
-        >
-          <X className="size-6 shrink-0 text-foreground" aria-hidden />
-        </button>
+        <SmokyDissolveShell dissolving={dissolving} variant="toast" className="relative overflow-visible">
+          <div className="relative pt-[48px]">
+          <button
+            type="button"
+            onClick={handleDismiss}
+            disabled={dissolving}
+            tabIndex={dismissVisible ? 0 : -1}
+            className={cn(
+              "extension-promo-toast-dismiss absolute right-0 top-0 flex size-10 items-center justify-center rounded-full bg-card disabled:pointer-events-none",
+              dismissVisible && !dissolving && "extension-promo-toast-dismiss-visible",
+            )}
+            aria-label="Dismiss extension promotion"
+            aria-hidden={!dismissVisible}
+          >
+            <X className="size-6 shrink-0 text-foreground" aria-hidden />
+          </button>
 
-        <div className="flex items-center gap-6 rounded-[48px] bg-card py-3 pl-8 pr-3">
-          <p className="min-w-0 flex-1 text-base leading-6 text-foreground">
-            Install the browser extension and save from anywhere
-          </p>
-          <Button asChild size="default" className="shrink-0 px-5 py-3">
-            <a href={storeUrl} target="_blank" rel="noopener noreferrer">
-              Install
-            </a>
-          </Button>
-        </div>
+          <div className="flex items-center gap-6 rounded-[48px] bg-card py-3 pl-8 pr-3">
+            <p className="min-w-0 flex-1 text-base leading-6 text-foreground">
+              Install the browser extension and save from anywhere
+            </p>
+            <Button asChild size="default" className="shrink-0 px-5 py-3">
+              <a href={storeUrl} target="_blank" rel="noopener noreferrer">
+                Install
+              </a>
+            </Button>
+          </div>
+          </div>
+        </SmokyDissolveShell>
       </div>
     </div>
   )

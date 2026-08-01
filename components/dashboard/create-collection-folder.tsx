@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Folder } from "@/components/dashboard/folder"
+import { ScaledFolderFrame } from "@/components/dashboard/scaled-folder-frame"
+import { SmokyDissolveShell } from "@/components/ui/smoky-dissolve-shell"
 import { cn } from "@/lib/utils"
 import { X } from "lucide-react"
 
@@ -16,7 +17,7 @@ export interface CreateCollectionFolderProps {
   onCancel: () => void
   /** Whether a create request is in progress. */
   creating?: boolean
-  /** When true, the folder graphic plays a "poof" disappear animation (e.g. on cancel). */
+  /** When true, the folder graphic plays a smoky dissolve dismiss animation (e.g. on cancel). */
   poofing?: boolean
   /** Optional class name for the root element. */
   className?: string
@@ -27,9 +28,6 @@ export interface CreateCollectionFolderProps {
   /** @deprecated No longer used; cancel is the top-right icon. */
   cancelLabel?: string
 }
-
-const FOLDER_HEIGHT_PX = 232
-const CARD_WIDTH_PX = 335
 
 /**
  * Create-collection UI matching Figma 1:1: Folder (Empty) with cancel icon (24px) in top-right,
@@ -49,22 +47,6 @@ export function CreateCollectionFolder({
 }: CreateCollectionFolderProps) {
   const [hover, setHover] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [scale, setScale] = useState({ x: 1, y: 1 })
-
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    const ro = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect
-      setScale({
-        x: width / CARD_WIDTH_PX,
-        y: height / FOLDER_HEIGHT_PX,
-      })
-    })
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -105,61 +87,33 @@ export function CreateCollectionFolder({
 
   return (
     <div
-      className={cn("relative flex w-full flex-col items-stretch", className)}
+      className={cn("relative flex w-full flex-col items-stretch overflow-visible", className)}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      {/* Card: folder scales with container so it matches grid collection cards */}
-      <div className="relative flex w-full flex-col">
-        <div
-          ref={containerRef}
-          className="relative w-full overflow-visible"
-          style={{ aspectRatio: `${CARD_WIDTH_PX} / ${FOLDER_HEIGHT_PX}` }}
-        >
-          {/* Outer: poof animation (scale 1→0.4); inner: responsive scale so size matches viewport */}
-          <div
-            className={cn("absolute left-0 top-0 origin-top-left", poofing && "animate-poof")}
-            style={{ width: CARD_WIDTH_PX, height: FOLDER_HEIGHT_PX }}
-          >
-            <div
-              className="absolute left-0 top-0 origin-top-left"
-              style={{
-                width: CARD_WIDTH_PX,
-                height: FOLDER_HEIGHT_PX,
-                transform: `scale(${scale.x}, ${scale.y})`,
-              }}
-            >
-              <Folder
-                type="Empty"
-                state={hover && !poofing ? "Hover" : "Default"}
-                className="h-full w-full"
-              />
-            </div>
-          </div>
-
-          {/* Cancel: 24px icon in top-right, 48px Icon-Only Primary CTA (Figma: right-[-8px] top-[8px]) */}
+      <SmokyDissolveShell
+        dissolving={poofing}
+        variant="collection"
+        className="relative flex flex-col overflow-visible"
+      >
+        <div className="relative w-full overflow-visible">
+          <ScaledFolderFrame
+            wrapperClassName="w-full overflow-visible"
+            type="Empty"
+            state={hover && !poofing ? "Hover" : "Default"}
+          />
           <button
             type="button"
             onClick={onCancel}
             disabled={creating || poofing}
-            className={cn(
-              "absolute right-[-8px] top-[8px] flex size-[48px] items-center justify-center rounded-full cta-primary cta-icon disabled:pointer-events-none",
-              poofing && "animate-poof"
-            )}
+            className="absolute right-[-8px] top-[8px] flex size-[48px] items-center justify-center rounded-full cta-primary cta-icon disabled:pointer-events-none"
             aria-label="Cancel"
           >
             <X className="size-6 shrink-0" aria-hidden />
           </button>
         </div>
 
-        {/* Body/base-reg label below folder: "Untitled collection", highlighted and ready to edit. Enter submits. */}
-        <div
-          className="w-full px-2 pt-3"
-          style={{
-            transition: poofing ? "opacity 200ms ease-out" : undefined,
-            opacity: poofing ? 0 : 1,
-          }}
-        >
+        <div className="mt-3 w-full px-2">
           <form onSubmit={handleFormSubmit} className="w-full">
             <input
               ref={inputRef}
@@ -169,7 +123,7 @@ export function CreateCollectionFolder({
               onKeyDown={handleKeyDown}
               onFocus={handleFocus}
               placeholder={placeholder}
-              disabled={creating}
+              disabled={creating || poofing}
               className={cn(
                 "w-full bg-transparent text-base font-normal leading-6 text-foreground",
                 "placeholder:text-foreground",
@@ -181,7 +135,7 @@ export function CreateCollectionFolder({
             />
           </form>
         </div>
-      </div>
+      </SmokyDissolveShell>
     </div>
   )
 }
