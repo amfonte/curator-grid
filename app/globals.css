@@ -564,10 +564,10 @@
   opacity: calc(1 - var(--smoky-fade, 0));
   transform: translate3d(
       0,
-      calc(var(--smoky-spread, 0) * var(--smoky-drift-y, 7%)),
+      calc(var(--smoky-spread-display, var(--smoky-spread, 0)) * var(--smoky-drift-y, 7%)),
       0
     )
-    scale(calc(1 + var(--smoky-spread, 0) * var(--smoky-scale-max, 0.15)));
+    scale(calc(1 + var(--smoky-spread-display, var(--smoky-spread, 0)) * var(--smoky-scale-max, 0.15)));
   filter: url(#smoky-dissolve-filter)
     blur(calc(var(--smoky-spread, 0) * var(--smoky-spread, 0) * var(--smoky-blur-max, 22px)));
   -webkit-mask-image: var(--smoky-dissolve-mask);

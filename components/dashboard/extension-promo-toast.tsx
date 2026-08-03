@@ -17,7 +17,7 @@ import {
 } from "@/lib/extension/promo-toast"
 import { getChromeExtensionStoreUrl } from "@/lib/extension/store-url"
 import { SmokyDissolveShell } from "@/components/ui/smoky-dissolve-shell"
-import { SMOKY_DISSOLVE_MS } from "@/lib/animation/smoky-dissolve"
+import { SMOKY_DISSOLVE_MAX_MS } from "@/lib/animation/smoky-dissolve"
 
 const REVEAL_DELAY_MS = 650
 const DISMISS_SHOW_DELAY_MS = 120
@@ -82,6 +82,15 @@ export function ExtensionPromoToast({
   const dismissShowTimerRef = useRef<number | null>(null)
   const maxWidth = useToastMaxWidth(suppressed === false)
 
+  const finishDismiss = useCallback(() => {
+    try {
+      localStorage.setItem(EXTENSION_PROMO_DISMISSED_KEY, "1")
+    } catch {
+      // Ignore storage failures; still hide for this session.
+    }
+    setSuppressed(true)
+  }, [])
+
   const suppressPromo = useCallback(
     (options?: { animate?: boolean }) => {
       if (suppressed === true || dissolving) return
@@ -89,13 +98,13 @@ export function ExtensionPromoToast({
       const shouldDissolve = options?.animate && revealed
       if (shouldDissolve) {
         setDissolving(true)
-        window.setTimeout(() => setSuppressed(true), SMOKY_DISSOLVE_MS)
+        window.setTimeout(finishDismiss, SMOKY_DISSOLVE_MAX_MS)
         return
       }
 
       setSuppressed(true)
     },
-    [dissolving, revealed, suppressed],
+    [dissolving, finishDismiss, revealed, suppressed],
   )
 
   useEffect(() => {
@@ -186,15 +195,8 @@ export function ExtensionPromoToast({
   const handleDismiss = useCallback(() => {
     if (dissolving) return
     setDissolving(true)
-    window.setTimeout(() => {
-      try {
-        localStorage.setItem(EXTENSION_PROMO_DISMISSED_KEY, "1")
-      } catch {
-        // Ignore storage failures; still hide for this session.
-      }
-      setSuppressed(true)
-    }, SMOKY_DISSOLVE_MS)
-  }, [dissolving])
+    window.setTimeout(finishDismiss, SMOKY_DISSOLVE_MAX_MS)
+  }, [dissolving, finishDismiss])
 
   if (suppressed !== false || maxWidth <= 0) return null
 
@@ -225,7 +227,12 @@ export function ExtensionPromoToast({
           }
         }}
       >
-        <SmokyDissolveShell dissolving={dissolving} variant="toast" className="relative overflow-visible">
+        <SmokyDissolveShell
+          dissolving={dissolving}
+          variant="toast"
+          className="relative overflow-visible"
+          onComplete={finishDismiss}
+        >
           <div className="relative pt-[48px]">
           <button
             type="button"

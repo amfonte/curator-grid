@@ -1,6 +1,12 @@
 /** Smoky dissolve timing and layout bleed for collection cancel + extension toast dismiss. */
 export const SMOKY_DISSOLVE_MS = 780
 
+/** Target frame count — progress advances one step per rAF, not by wall clock. */
+export const SMOKY_DISSOLVE_FRAMES = Math.max(1, Math.round(SMOKY_DISSOLVE_MS / (1000 / 60)))
+
+/** Safety cap if frames stall (e.g. background tab). */
+export const SMOKY_DISSOLVE_MAX_MS = 6000
+
 /** Fraction of timeline where element stays fully opaque while edges erode. */
 export const SMOKY_DISSOLVE_OPACITY_HOLD = 0.38
 

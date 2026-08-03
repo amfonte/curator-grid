@@ -13,7 +13,7 @@ import { CreateCollectionFolder } from "@/components/dashboard/create-collection
 import { ExtensionPromoToast } from "@/components/dashboard/extension-promo-toast"
 import { ScaledFolderFrame } from "@/components/dashboard/scaled-folder-frame"
 import { parseFolderAppearance } from "@/lib/folder-customization"
-import { SMOKY_DISSOLVE_MS } from "@/lib/animation/smoky-dissolve"
+import { SMOKY_DISSOLVE_MAX_MS } from "@/lib/animation/smoky-dissolve"
 import { cn } from "@/lib/utils"
 
 const QUOTE_CYCLE_MS = 6000
@@ -163,6 +163,11 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
     })
 
     const prev = flipPositionsRef.current
+    if (phase === "cancelling") {
+      flipPositionsRef.current = newPositions
+      return
+    }
+
     const useCancelTiming = cancelFlipRef.current
     if (useCancelTiming) cancelFlipRef.current = false
 
@@ -288,40 +293,32 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
     }
   }, [supabase])
 
+  const finishCancelCreate = useCallback(() => {
+    if (cancelSnapHandledRef.current) return
+    cancelSnapHandledRef.current = true
+    if (cancelTimeoutRef.current) {
+      clearTimeout(cancelTimeoutRef.current)
+      cancelTimeoutRef.current = null
+    }
+    cancelFlipRef.current = true
+    setShowCreateForm(false)
+    setNewBoardName("")
+    setPhase("idle")
+    if (!hasCollections) {
+      setQuotesRevealed(false)
+      setQuotesEnteringFromCancel(true)
+    }
+  }, [hasCollections])
+
   function handleCancelCreate() {
     setPhase("cancelling")
+    cancelSnapHandledRef.current = false
     if (cancelTimeoutRef.current) clearTimeout(cancelTimeoutRef.current)
-    cancelTimeoutRef.current = null
     if (cancelGridSlideRef.current) {
       clearTimeout(cancelGridSlideRef.current)
       cancelGridSlideRef.current = null
     }
-
-    if (hasCollections) {
-      cancelSnapHandledRef.current = false
-      cancelFlipRef.current = true
-      function doSnap() {
-        if (cancelSnapHandledRef.current) return
-        cancelSnapHandledRef.current = true
-        if (cancelTimeoutRef.current) {
-          clearTimeout(cancelTimeoutRef.current)
-          cancelTimeoutRef.current = null
-        }
-        setShowCreateForm(false)
-        setNewBoardName("")
-        setPhase("idle")
-      }
-      cancelTimeoutRef.current = setTimeout(doSnap, SMOKY_DISSOLVE_MS)
-    } else {
-      cancelTimeoutRef.current = setTimeout(() => {
-        setShowCreateForm(false)
-        setNewBoardName("")
-        setPhase("idle")
-        setQuotesRevealed(false)
-        setQuotesEnteringFromCancel(true)
-        cancelTimeoutRef.current = null
-      }, SMOKY_DISSOLVE_MS)
-    }
+    cancelTimeoutRef.current = setTimeout(finishCancelCreate, SMOKY_DISSOLVE_MAX_MS)
   }
 
   async function handleCreateBoard() {
@@ -451,6 +448,7 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
                   onCancel={handleCancelCreate}
                   creating={creating || phase === "cancelling"}
                   poofing={phase === "cancelling"}
+                  onPoofComplete={finishCancelCreate}
                   className="self-start w-full max-w-[335px]"
                   placeholder="Untitled collection"
                   submitLabel="Create"
@@ -508,6 +506,7 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
                         onCancel={handleCancelCreate}
                         creating={creating || phase === "cancelling"}
                         poofing={phase === "cancelling"}
+                        onPoofComplete={finishCancelCreate}
                         className="w-full"
                         placeholder="Untitled collection"
                         submitLabel="Create"
