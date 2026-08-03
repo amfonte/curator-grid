@@ -4,6 +4,50 @@ export const SMOKY_DISSOLVE_MS = 780
 /** Fraction of timeline where element stays fully opaque while edges erode. */
 export const SMOKY_DISSOLVE_OPACITY_HOLD = 0.38
 
+let prewarmed = false
+
+function extractMaskDataUrl(): string | null {
+  const match = SMOKY_DISSOLVE_MASK_IMAGE.match(/^url\(["']?(.+?)["']?\)$/)
+  return match?.[1] ?? null
+}
+
+/** Warm SVG filter, noise mask decode, and @property animation on load. */
+export function prewarmSmokyDissolveFilter(): void {
+  if (typeof document === "undefined" || prewarmed) return
+  prewarmed = true
+
+  const maskDataUrl = extractMaskDataUrl()
+  if (maskDataUrl) {
+    const mask = new Image()
+    mask.decoding = "async"
+    mask.src = maskDataUrl
+  }
+
+  const el = document.createElement("div")
+  el.setAttribute("aria-hidden", "true")
+  el.className = "smoky-dissolve-prewarm"
+  el.style.setProperty("--smoky-dissolve-mask", SMOKY_DISSOLVE_MASK_IMAGE)
+  el.style.setProperty("--smoky-dissolve-ms", "1ms")
+  el.style.setProperty("--smoky-spread", "0.5")
+  el.style.setProperty("--smoky-fade", "0.2")
+  el.style.setProperty("--smoky-drift-y", "5%")
+  el.style.setProperty("--smoky-scale-max", "0.11")
+  el.style.setProperty("--smoky-blur-max", "18px")
+  el.style.setProperty("--smoky-mask-grow", "220%")
+  el.style.setProperty("--smoky-mask-drift-y", "6%")
+
+  document.body.appendChild(el)
+  void el.offsetHeight
+
+  requestAnimationFrame(() => {
+    el.classList.add("smoky-dissolve-shell-active", "smoky-dissolve-shell-animating")
+    void el.offsetHeight
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => el.remove())
+    })
+  })
+}
+
 /** Horizontal paint bleed per side — shell expands; inner content stays grid width. */
 export const SMOKY_DISSOLVE_COLLECTION_BLEED_X_PERCENT = 14
 
