@@ -40,7 +40,9 @@ export function prewarmSmokyDissolveFilter(): void {
   void el.offsetHeight
 
   requestAnimationFrame(() => {
-    el.classList.add("smoky-dissolve-shell-active", "smoky-dissolve-shell-animating")
+    el.classList.add("smoky-dissolve-shell-active")
+    el.style.setProperty("--smoky-spread", "0.5")
+    el.style.setProperty("--smoky-fade", "0.2")
     void el.offsetHeight
     requestAnimationFrame(() => {
       requestAnimationFrame(() => el.remove())

@@ -549,46 +549,11 @@
 }
 
 /*
- * Smoky dissolve — CSS @property animation drives --smoky-spread / --smoky-fade
- * (same curve as JS easing). Spread erodes edges first; opacity holds until ~38%.
+ * Smoky dissolve — rAF-driven via .smoky-dissolve-shell-active (--smoky-spread / --smoky-fade).
+ * Spread erodes edges first; opacity holds until ~38% of the timeline.
  */
-@property --smoky-spread {
-  syntax: "<number>";
-  inherits: false;
-  initial-value: 0;
-}
-
-@property --smoky-fade {
-  syntax: "<number>";
-  inherits: false;
-  initial-value: 0;
-}
-
 .smoky-dissolve-shell {
   transform-origin: 50% 42%;
-}
-
-/* Off-screen host used once on load to compile the full dissolve pipeline. */
-.smoky-dissolve-prewarm {
-  position: fixed;
-  left: -9999px;
-  top: 0;
-  width: 128px;
-  height: 128px;
-  opacity: 0.001;
-  pointer-events: none;
-  contain: strict;
-}
-
-/* Promote layer while visible so filter compile can overlap idle snapshot work. */
-.smoky-dissolve-shell-primed {
-  isolation: isolate;
-  backface-visibility: hidden;
-  transform: translateZ(0);
-}
-
-.smoky-dissolve-snapshot {
-  object-fit: fill;
 }
 
 .smoky-dissolve-shell-active {
@@ -619,52 +584,16 @@
   will-change: transform, opacity;
 }
 
-.smoky-dissolve-shell-animating {
-  animation: smoky-dissolve-progress var(--smoky-dissolve-ms, 780ms) linear forwards;
-}
-
-@keyframes smoky-dissolve-progress {
-  0% { --smoky-spread: 0; --smoky-fade: 0; }
-  2.5% { --smoky-spread: 0.0778; --smoky-fade: 0; }
-  5% { --smoky-spread: 0.1514; --smoky-fade: 0; }
-  7.5% { --smoky-spread: 0.2208; --smoky-fade: 0; }
-  10% { --smoky-spread: 0.2862; --smoky-fade: 0; }
-  12.5% { --smoky-spread: 0.3477; --smoky-fade: 0; }
-  15% { --smoky-spread: 0.4055; --smoky-fade: 0; }
-  17.5% { --smoky-spread: 0.4597; --smoky-fade: 0; }
-  20% { --smoky-spread: 0.5103; --smoky-fade: 0; }
-  22.5% { --smoky-spread: 0.5577; --smoky-fade: 0; }
-  25% { --smoky-spread: 0.6017; --smoky-fade: 0; }
-  27.5% { --smoky-spread: 0.6427; --smoky-fade: 0; }
-  30% { --smoky-spread: 0.6806; --smoky-fade: 0; }
-  32.5% { --smoky-spread: 0.7157; --smoky-fade: 0; }
-  35% { --smoky-spread: 0.748; --smoky-fade: 0; }
-  37.5% { --smoky-spread: 0.7778; --smoky-fade: 0; }
-  40% { --smoky-spread: 0.805; --smoky-fade: 0.0996; }
-  42.5% { --smoky-spread: 0.8298; --smoky-fade: 0.2143; }
-  45% { --smoky-spread: 0.8524; --smoky-fade: 0.3184; }
-  47.5% { --smoky-spread: 0.8728; --smoky-fade: 0.4127; }
-  50% { --smoky-spread: 0.8912; --smoky-fade: 0.4976; }
-  52.5% { --smoky-spread: 0.9077; --smoky-fade: 0.5737; }
-  55% { --smoky-spread: 0.9223; --smoky-fade: 0.6414; }
-  57.5% { --smoky-spread: 0.9353; --smoky-fade: 0.7013; }
-  60% { --smoky-spread: 0.9467; --smoky-fade: 0.754; }
-  62.5% { --smoky-spread: 0.9567; --smoky-fade: 0.7999; }
-  65% { --smoky-spread: 0.9652; --smoky-fade: 0.8395; }
-  67.5% { --smoky-spread: 0.9726; --smoky-fade: 0.8734; }
-  70% { --smoky-spread: 0.9788; --smoky-fade: 0.902; }
-  72.5% { --smoky-spread: 0.9839; --smoky-fade: 0.9258; }
-  75% { --smoky-spread: 0.9882; --smoky-fade: 0.9453; }
-  77.5% { --smoky-spread: 0.9915; --smoky-fade: 0.961; }
-  80% { --smoky-spread: 0.9942; --smoky-fade: 0.9732; }
-  82.5% { --smoky-spread: 0.9962; --smoky-fade: 0.9825; }
-  85% { --smoky-spread: 0.9977; --smoky-fade: 0.9893; }
-  87.5% { --smoky-spread: 0.9987; --smoky-fade: 0.9941; }
-  90% { --smoky-spread: 0.9994; --smoky-fade: 0.9971; }
-  92.5% { --smoky-spread: 0.9997; --smoky-fade: 0.9988; }
-  95% { --smoky-spread: 0.9999; --smoky-fade: 0.9997; }
-  97.5% { --smoky-spread: 1; --smoky-fade: 1; }
-  100% { --smoky-spread: 1; --smoky-fade: 1; }
+/* Off-screen host used once on load to compile the full dissolve pipeline. */
+.smoky-dissolve-prewarm {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  width: 128px;
+  height: 128px;
+  opacity: 0.001;
+  pointer-events: none;
+  contain: strict;
 }
 
 .smoky-dissolve-shell--toast {
@@ -720,9 +649,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .smoky-dissolve-shell-active,
-  .smoky-dissolve-shell-animating {
-    animation: none;
+  .smoky-dissolve-shell-active {
     opacity: 0;
     transform: none;
     filter: none;
