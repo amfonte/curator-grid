@@ -564,10 +564,10 @@
   opacity: calc(1 - var(--smoky-fade, 0));
   transform: translate3d(
       0,
-      calc(var(--smoky-spread-display, var(--smoky-spread, 0)) * var(--smoky-drift-y, 7%)),
+      calc(var(--smoky-spread, 0) * var(--smoky-drift-y, 7%)),
       0
     )
-    scale(calc(1 + var(--smoky-spread-display, var(--smoky-spread, 0)) * var(--smoky-scale-max, 0.15)));
+    scale(calc(1 + var(--smoky-spread, 0) * var(--smoky-scale-max, 0.15)));
   filter: url(#smoky-dissolve-filter)
     blur(calc(var(--smoky-spread, 0) * var(--smoky-spread, 0) * var(--smoky-blur-max, 22px)));
   -webkit-mask-image: var(--smoky-dissolve-mask);
@@ -582,6 +582,42 @@
   mask-size: calc(100% + var(--smoky-spread, 0) * var(--smoky-mask-grow, 260%))
     calc(100% + var(--smoky-spread, 0) * var(--smoky-mask-grow, 260%));
   will-change: transform, opacity;
+}
+
+/* Touch — compositor-only poof: drift, scale, soft blur, late fade. No SVG filter. */
+.smoky-dissolve-shell-active.smoky-dissolve-shell-active--touch {
+  opacity: 1;
+  transform: none;
+  filter: none;
+  -webkit-mask-image: none;
+  mask-image: none;
+  animation:
+    smoky-dissolve-touch-motion var(--smoky-dissolve-ms, 780ms) cubic-bezier(0, 0, 0.2, 1) forwards,
+    smoky-dissolve-touch-fade var(--smoky-dissolve-ms, 780ms) linear forwards;
+}
+
+@keyframes smoky-dissolve-touch-motion {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+
+  to {
+    transform: translate3d(0, var(--smoky-drift-y, 7%), 0)
+      scale(calc(1 + var(--smoky-scale-max, 0.15)));
+    filter: blur(var(--smoky-blur-max, 22px));
+  }
+}
+
+@keyframes smoky-dissolve-touch-fade {
+  0%,
+  38% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
 }
 
 /* Off-screen host used once on load to compile the full dissolve pipeline. */
@@ -649,7 +685,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .smoky-dissolve-shell-active {
+  .smoky-dissolve-shell-active,
+  .smoky-dissolve-shell-active.smoky-dissolve-shell-active--touch {
+    animation: none;
     opacity: 0;
     transform: none;
     filter: none;

@@ -1,14 +1,14 @@
 /** Smoky dissolve timing and layout bleed for collection cancel + extension toast dismiss. */
 export const SMOKY_DISSOLVE_MS = 780
 
-/** Target frame count — progress advances one step per rAF, not by wall clock. */
-export const SMOKY_DISSOLVE_FRAMES = Math.max(1, Math.round(SMOKY_DISSOLVE_MS / (1000 / 60)))
-
-/** Safety cap if frames stall (e.g. background tab). */
-export const SMOKY_DISSOLVE_MAX_MS = 6000
-
 /** Fraction of timeline where element stays fully opaque while edges erode. */
 export const SMOKY_DISSOLVE_OPACITY_HOLD = 0.38
+
+/** Touch devices use CSS motion only — SVG filter + noise mask can't paint at interactive rates. */
+export function prefersTouchSmokyDissolve(): boolean {
+  if (typeof window === "undefined") return false
+  return window.matchMedia("(pointer: coarse)").matches
+}
 
 let prewarmed = false
 
@@ -17,9 +17,9 @@ function extractMaskDataUrl(): string | null {
   return match?.[1] ?? null
 }
 
-/** Warm SVG filter, noise mask decode, and @property animation on load. */
+/** Warm SVG filter + noise mask on desktop so the first dissolve avoids compile jank. */
 export function prewarmSmokyDissolveFilter(): void {
-  if (typeof document === "undefined" || prewarmed) return
+  if (typeof document === "undefined" || prewarmed || prefersTouchSmokyDissolve()) return
   prewarmed = true
 
   const maskDataUrl = extractMaskDataUrl()
@@ -33,26 +33,13 @@ export function prewarmSmokyDissolveFilter(): void {
   el.setAttribute("aria-hidden", "true")
   el.className = "smoky-dissolve-prewarm"
   el.style.setProperty("--smoky-dissolve-mask", SMOKY_DISSOLVE_MASK_IMAGE)
-  el.style.setProperty("--smoky-dissolve-ms", "1ms")
-  el.style.setProperty("--smoky-spread", "0.5")
-  el.style.setProperty("--smoky-fade", "0.2")
-  el.style.setProperty("--smoky-drift-y", "5%")
-  el.style.setProperty("--smoky-scale-max", "0.11")
-  el.style.setProperty("--smoky-blur-max", "18px")
-  el.style.setProperty("--smoky-mask-grow", "220%")
-  el.style.setProperty("--smoky-mask-drift-y", "6%")
 
   document.body.appendChild(el)
   void el.offsetHeight
-
   requestAnimationFrame(() => {
     el.classList.add("smoky-dissolve-shell-active")
-    el.style.setProperty("--smoky-spread", "0.5")
-    el.style.setProperty("--smoky-fade", "0.2")
     void el.offsetHeight
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => el.remove())
-    })
+    requestAnimationFrame(() => el.remove())
   })
 }
 

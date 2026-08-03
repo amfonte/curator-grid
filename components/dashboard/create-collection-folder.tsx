@@ -17,8 +17,6 @@ export interface CreateCollectionFolderProps {
   onCancel: () => void
   /** Whether a create request is in progress. */
   creating?: boolean
-  /** Called after the poof animation finishes. */
-  onPoofComplete?: () => void
   /** When true, the folder graphic plays a smoky dissolve dismiss animation (e.g. on cancel). */
   poofing?: boolean
   /** Optional class name for the root element. */
@@ -44,7 +42,6 @@ export function CreateCollectionFolder({
   onCancel,
   creating = false,
   poofing = false,
-  onPoofComplete,
   className,
   placeholder = "Untitled collection",
 }: CreateCollectionFolderProps) {
@@ -98,7 +95,6 @@ export function CreateCollectionFolder({
         dissolving={poofing}
         variant="collection"
         className="relative flex flex-col overflow-visible"
-        onComplete={onPoofComplete}
       >
         <div className="relative w-full overflow-visible">
           <ScaledFolderFrame
