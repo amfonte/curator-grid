@@ -1436,12 +1436,4 @@ div:has(> [data-slot="smooth-corners"].cta-secondary:disabled.cta-disabled-loadi
   .dashboard-quote-sm-only-pad {
     padding-inline: 32px;
   }
-
-  .dashboard-first-cta-sm-docked {
-    position: fixed;
-    left: 50%;
-    bottom: 32px;
-    transform: translateX(-50%);
-    z-index: 40;
-  }
 }

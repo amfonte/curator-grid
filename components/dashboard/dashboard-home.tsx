@@ -15,6 +15,8 @@ import { ScaledFolderFrame } from "@/components/dashboard/scaled-folder-frame"
 import { parseFolderAppearance } from "@/lib/folder-customization"
 import { SMOKY_DISSOLVE_MS } from "@/lib/animation/smoky-dissolve"
 import { cn } from "@/lib/utils"
+import { DASHBOARD_FLOATING_CONTROLS_BOTTOM_PX } from "@/lib/dashboard/floating-controls"
+import { primeMobileKeyboard } from "@/lib/dashboard/mobile-keyboard"
 
 const QUOTE_CYCLE_MS = 6000
 
@@ -114,6 +116,13 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
   const cancelFlipRef = useRef(false)
   const createSlotRef = useRef<HTMLLIElement | null>(null)
   const cancelSnapHandledRef = useRef(false)
+  /** Opens the mobile keyboard synchronously on Add-collection tap (iOS gesture chain). */
+  const createKeyboardPrimeRef = useRef<HTMLInputElement>(null)
+
+  const handleStartCreate = useCallback(() => {
+    primeMobileKeyboard(createKeyboardPrimeRef.current)
+    setShowCreateForm(true)
+  }, [])
 
   useLayoutEffect(() => {
     if (typeof window === "undefined") return
@@ -127,6 +136,40 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
     })
     return () => window.cancelAnimationFrame(frame)
   }, [])
+
+  // Create-folder cancel (+ FLIP slide) can widen scrollWidth briefly; mobile
+  // browsers then pan horizontally and the fixed header looks shifted. Lock x
+  // overflow/scroll while the form is open — folder size and cancel position
+  // stay unchanged; content still fits within the existing px-4 gutters.
+  useLayoutEffect(() => {
+    if (!showCreateForm) return
+
+    const html = document.documentElement
+    const body = document.body
+    const prevHtmlOverflowX = html.style.overflowX
+    const prevBodyOverflowX = body.style.overflowX
+
+    const lockScrollX = () => {
+      if (window.scrollX !== 0) {
+        window.scrollTo({ left: 0, top: window.scrollY, behavior: "instant" })
+      }
+    }
+
+    html.style.overflowX = "hidden"
+    body.style.overflowX = "hidden"
+    lockScrollX()
+
+    const vv = window.visualViewport
+    vv?.addEventListener("resize", lockScrollX)
+    vv?.addEventListener("scroll", lockScrollX)
+
+    return () => {
+      html.style.overflowX = prevHtmlOverflowX
+      body.style.overflowX = prevBodyOverflowX
+      vv?.removeEventListener("resize", lockScrollX)
+      vv?.removeEventListener("scroll", lockScrollX)
+    }
+  }, [showCreateForm])
 
   // Do not show or count the legacy "Unsorted" default board — treat as no collections.
   const allUserBoards = useMemo(
@@ -347,18 +390,53 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
 
   return (
     <div className="flex flex-col bg-background">
+      <input
+        ref={createKeyboardPrimeRef}
+        type="text"
+        tabIndex={-1}
+        aria-hidden="true"
+        defaultValue=""
+        className="pointer-events-none fixed left-0 top-0 h-px w-px opacity-0"
+      />
       <TopNav
         search={dashboardSearch}
         onSearchChange={setDashboardSearch}
         columns={6}
         onColumnsChange={() => {}}
-        onAddClick={() => setShowCreateForm(true)}
+        onAddClick={handleStartCreate}
         filterType={null}
         onFilterTypeChange={() => {}}
         user={user}
         isCollectionView={false}
         showAddCollection={hasCollections}
+        hideMobileFloatingAdd={showCreateForm}
       />
+
+      {!hasCollections && (phase === "idle" || phase === "exiting") && (
+        <div
+          className="pointer-events-none fixed inset-x-0 z-40 flex justify-center sm:hidden"
+          style={{
+            bottom: DASHBOARD_FLOATING_CONTROLS_BOTTOM_PX,
+            transition: `opacity ${phase === "exiting" ? EXIT_MS : QUOTES_ENTER_MS}ms ease-out`,
+            opacity:
+              phase === "exiting"
+                ? 0
+                : quotesEnteringFromCancel
+                  ? (quotesRevealed ? 1 : 0)
+                  : 1,
+          }}
+          data-dashboard-floating-controls
+        >
+          <Button
+            size="lg"
+            onClick={handleStartCreate}
+            className="pointer-events-auto"
+            disabled={phase === "exiting"}
+          >
+            Create your first collection
+          </Button>
+        </div>
+      )}
 
       <main className="flex-1 px-4 pb-4 pt-[128px] md:pt-[156px]">
         {!hasCollections ? (
@@ -372,7 +450,7 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
             {/* Phase 1: quotes + CTA (idle or exiting). Fade out together when exiting; fade in when returning from cancel. */}
             {(phase === "idle" || phase === "exiting") && (
               <div
-                className="w-full max-w-[690px] text-left space-y-10"
+                className="w-full max-w-[690px] text-left"
                 style={{
                   transition: `opacity ${phase === "exiting" ? EXIT_MS : QUOTES_ENTER_MS}ms ease-out`,
                   opacity:
@@ -384,7 +462,7 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
                 }}
               >
                 <div
-                  className="min-h-[10.75rem] w-full flex flex-col items-start justify-start"
+                  className="min-h-[10.75rem] mb-0 sm:mb-10 w-full flex flex-col items-start justify-start"
                   style={{
                     transition: `opacity ${QUOTE_TRANSITION_MS}ms ease-out, filter ${QUOTE_TRANSITION_MS}ms ease-out, transform ${QUOTE_TRANSITION_MS}ms ease-out`,
                     opacity: quoteTransitioning ? 0 : 1,
@@ -417,14 +495,15 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
                     </blockquote>
                   )}
                 </div>
-                <Button
-                  size="lg"
-                  onClick={() => setShowCreateForm(true)}
-                  className="self-start dashboard-first-cta-sm-docked"
-                  disabled={phase === "exiting"}
-                >
-                  Create your first collection
-                </Button>
+                <div className="hidden sm:block self-start">
+                  <Button
+                    size="lg"
+                    onClick={handleStartCreate}
+                    disabled={phase === "exiting"}
+                  >
+                    Create your first collection
+                  </Button>
+                </div>
               </div>
             )}
 
@@ -432,7 +511,7 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
             {(phase === "showing-folder" || phase === "cancelling") && (
               <div
                 className={cn(
-                  "w-full max-w-[335px] flex flex-col items-stretch self-start overflow-visible",
+                  "w-full flex flex-col items-stretch overflow-visible sm:max-w-[335px]",
                   phase === "cancelling" && "relative z-10",
                 )}
                 style={{
@@ -451,7 +530,7 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
                   onCancel={handleCancelCreate}
                   creating={creating || phase === "cancelling"}
                   poofing={phase === "cancelling"}
-                  className="self-start w-full max-w-[335px]"
+                  className="w-full"
                   placeholder="Untitled collection"
                   submitLabel="Create"
                   cancelLabel="Cancel"
@@ -464,10 +543,7 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
             <div
               key="collections-grid"
               ref={gridWrapperRef}
-              className={cn(
-                "min-w-0 flex-1",
-                showCreateForm && "overflow-visible",
-              )}
+              className={cn("min-w-0 flex-1", showCreateForm && "overflow-visible")}
             >
               {userBoards.length === 0 && dashboardSearch ? (
                 <div className="flex min-h-[200px] items-center justify-center">

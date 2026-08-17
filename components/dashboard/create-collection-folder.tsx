@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useLayoutEffect } from "react"
 import { ScaledFolderFrame } from "@/components/dashboard/scaled-folder-frame"
 import { SmokyDissolveShell } from "@/components/ui/smoky-dissolve-shell"
 import { cn } from "@/lib/utils"
@@ -48,15 +48,19 @@ export function CreateCollectionFolder({
   const [hover, setHover] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    inputRef.current?.focus()
+  // useLayoutEffect so focus runs before paint — pairs with dashboard keyboard
+  // priming on the Add-collection tap to keep the mobile keyboard open.
+  useLayoutEffect(() => {
+    const input = inputRef.current
+    if (!input) return
+
+    input.focus({ preventScroll: true })
     if (value === "") {
       onChange(placeholder)
-      const t = setTimeout(() => inputRef.current?.select(), 10)
+      const t = setTimeout(() => input.select(), 10)
       return () => clearTimeout(t)
-    } else {
-      inputRef.current?.select()
     }
+    input.select()
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount to focus and inject placeholder for selection
   }, [])
 

@@ -29,6 +29,8 @@ interface TopNavProps {
   isCollectionView?: boolean
   /** When true (and !isCollectionView), show "Add collection" in header. Use after user has created their first collection. */
   showAddCollection?: boolean
+  /** When true, hide the mobile floating "Add collection" CTA (e.g. while the create form is open). */
+  hideMobileFloatingAdd?: boolean
 }
 
 /** Subpixel / rounding: below this, treat the page as non-scrollable so rubber-band
@@ -53,6 +55,7 @@ export function TopNav(props: TopNavProps) {
     user,
     isCollectionView = false,
     showAddCollection = false,
+    hideMobileFloatingAdd = false,
   } = props
   const pathname = usePathname()
   const [mounted, setMounted] = useState(false)
@@ -204,7 +207,7 @@ export function TopNav(props: TopNavProps) {
       <>
         <header
           className={cn(
-            "flex shrink-0 items-center px-4 pt-6",
+            "flex shrink-0 items-center overflow-hidden px-4 pt-6",
             headerBaseClasses,
             headerVisibilityClasses,
           )}
@@ -243,26 +246,31 @@ export function TopNav(props: TopNavProps) {
             </div>
           </div>
 
-          <div className="ml-auto flex items-center gap-6">
-            <Button variant="default" size="lg" onClick={onAddClick} className="max-sm:hidden">
-              Add collection
-            </Button>
+          <div className="ml-auto flex shrink-0 items-center gap-6">
+            <div className="max-sm:hidden">
+              <Button variant="default" size="lg" onClick={onAddClick}>
+                Add collection
+              </Button>
+            </div>
             {userMenu}
           </div>
         </header>
-        <div
-          className="pointer-events-none fixed inset-x-0 z-40 flex justify-center sm:hidden"
-          style={{ bottom: DASHBOARD_FLOATING_CONTROLS_BOTTOM_PX }}
-        >
-          <Button
-            variant="default"
-            size="lg"
-            onClick={onAddClick}
-            className="pointer-events-auto"
+        {!hideMobileFloatingAdd && (
+          <div
+            className="pointer-events-none fixed inset-x-0 z-40 flex justify-center sm:hidden"
+            style={{ bottom: DASHBOARD_FLOATING_CONTROLS_BOTTOM_PX }}
+            data-dashboard-floating-controls
           >
-            Add collection
-          </Button>
-        </div>
+            <Button
+              variant="default"
+              size="lg"
+              onClick={onAddClick}
+              className="pointer-events-auto"
+            >
+              Add collection
+            </Button>
+          </div>
+        )}
       </>
     )
   }
@@ -271,7 +279,7 @@ export function TopNav(props: TopNavProps) {
     return (
       <header
         className={cn(
-          "flex shrink-0 items-center justify-between px-4 pt-6",
+          "flex shrink-0 items-center justify-between overflow-hidden px-4 pt-6",
           headerBaseClasses,
           headerVisibilityClasses,
         )}
@@ -280,7 +288,7 @@ export function TopNav(props: TopNavProps) {
           <CuratorLogo />
         </div>
 
-        <div className="flex items-center gap-6">{userMenu}</div>
+        <div className="flex shrink-0 items-center gap-6">{userMenu}</div>
       </header>
     )
   }
