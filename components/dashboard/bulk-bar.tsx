@@ -37,7 +37,7 @@ export function BulkBar({
         {/* Primary action: Move to collection (text-only primary button) */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="sm">
+            <Button>
               Move to collection
             </Button>
           </DropdownMenuTrigger>
@@ -54,7 +54,7 @@ export function BulkBar({
         </DropdownMenu>
 
         {/* Secondary action: Delete (Secondary Button text, no icon) */}
-        <Button variant="secondary" size="sm" onClick={onBulkDelete}>
+        <Button variant="secondary" onClick={onBulkDelete}>
           Delete
         </Button>
 
