@@ -28,7 +28,7 @@ import {
 import { FormField } from "@/components/ui/form-field"
 import { Loader2, Link as LinkIcon, Image as ImageIcon, X } from "lucide-react"
 import { cn } from "@/lib/utils"
-import imageCompression from "browser-image-compression"
+import { compressBrowserImage } from "@/lib/images/compress-browser-image"
 import { AddItemTabsIndicatorStatic } from "./add-item-tabs-indicator-static"
 import { EmptyCanvasBorder } from "./empty-canvas-border"
 
@@ -85,11 +85,9 @@ async function createImageItem({
   supabase,
 }: CreateImageItemParams): Promise<ItemWithBoards> {
   // Compress to WebP (tuned to avoid hangs on huge images)
-  const compressed = await imageCompression(file, {
+  const compressed = await compressBrowserImage(file, {
     maxSizeMB: 0.75,
     maxWidthOrHeight: 1920,
-    fileType: "image/webp",
-    useWebWorker: true,
   })
 
   const {

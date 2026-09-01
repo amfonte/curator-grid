@@ -20,7 +20,7 @@ import {
 import { FormField } from "@/components/ui/form-field"
 import { Loader2, X } from "lucide-react"
 import { cn } from "@/lib/utils"
-import imageCompression from "browser-image-compression"
+import { compressBrowserImage } from "@/lib/images/compress-browser-image"
 import { EmptyCanvasBorder } from "./empty-canvas-border"
 
 interface EditItemDialogProps {
@@ -153,11 +153,9 @@ export function EditItemDialog({
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error("Not authenticated")
 
-    const compressed = await imageCompression(screenshotFile, {
+    const compressed = await compressBrowserImage(screenshotFile, {
       maxSizeMB: 1,
       maxWidthOrHeight: 4096,
-      fileType: "image/webp",
-      useWebWorker: true,
     })
 
     const rawName = compressed.name || "screenshot.webp"
