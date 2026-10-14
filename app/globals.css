@@ -1434,6 +1434,6 @@ div:has(> [data-slot="smooth-corners"].cta-secondary:disabled.cta-disabled-loadi
 /* Dashboard empty-state quote: apply 32px horizontal padding on small screens only. */
 @media (max-width: 767px) {
   .dashboard-quote-sm-only-pad {
-    padding-inline: 32px;
+    padding-inline: 16px;
   }
 }

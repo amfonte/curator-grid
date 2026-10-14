@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation"
 import { TopNav } from "@/components/dashboard/top-nav"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
-import { getRandomQuote, getRandomQuoteOtherThan } from "@/lib/quotes"
+import { EmptyStateQuote } from "@/components/dashboard/empty-state-quote"
 import { CreateCollectionFolder } from "@/components/dashboard/create-collection-folder"
 import { ExtensionPromoToast } from "@/components/dashboard/extension-promo-toast"
 import { ScaledFolderFrame } from "@/components/dashboard/scaled-folder-frame"
@@ -17,8 +17,6 @@ import { SMOKY_DISSOLVE_MS } from "@/lib/animation/smoky-dissolve"
 import { cn } from "@/lib/utils"
 import { DASHBOARD_FLOATING_CONTROLS_BOTTOM_PX } from "@/lib/dashboard/floating-controls"
 import { primeMobileKeyboard } from "@/lib/dashboard/mobile-keyboard"
-
-const QUOTE_CYCLE_MS = 6000
 
 /** Grid slide: duration when opening (grid slides right). */
 const GRID_SLIDE_MS = 260
@@ -78,7 +76,6 @@ function CollectionCard({ board }: { board: Board }) {
     </li>
   )
 }
-const QUOTE_TRANSITION_MS = 450
 const EXIT_MS = 400
 const FOLDER_ENTER_DELAY_MS = 0
 const FOLDER_ENTER_MS = 380
@@ -98,13 +95,10 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [newBoardName, setNewBoardName] = useState("")
   const [creating, setCreating] = useState(false)
-  const [quote, setQuote] = useState<ReturnType<typeof getRandomQuote> | null>(null)
-  const [quoteTransitioning, setQuoteTransitioning] = useState(false)
   const [phase, setPhase] = useState<"idle" | "exiting" | "showing-folder" | "cancelling">("idle")
   const [folderVisible, setFolderVisible] = useState(false)
   const [quotesEnteringFromCancel, setQuotesEnteringFromCancel] = useState(false)
   const [quotesRevealed, setQuotesRevealed] = useState(false)
-  const cycleTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const exitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const cancelTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const cancelGridSlideRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -237,25 +231,6 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
 
     flipPositionsRef.current = newPositions
   }, [userBoards, showCreateForm, phase])
-
-  // Initial quote and cycle to a new random quote on an interval
-  useEffect(() => {
-    setQuote(getRandomQuote())
-  }, [])
-
-  useEffect(() => {
-    if (hasCollections || showCreateForm) return
-    cycleTimerRef.current = setInterval(() => {
-      setQuoteTransitioning(true)
-      setTimeout(() => {
-        setQuote((prev) => getRandomQuoteOtherThan(prev))
-        setQuoteTransitioning(false)
-      }, QUOTE_TRANSITION_MS)
-    }, QUOTE_CYCLE_MS)
-    return () => {
-      if (cycleTimerRef.current) clearInterval(cycleTimerRef.current)
-    }
-  }, [hasCollections, showCreateForm])
 
   // When user clicks CTA: go to exiting, then after EXIT_MS switch to showing-folder (no boards); or go straight to showing-folder (has boards).
   useEffect(() => {
@@ -444,7 +419,7 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
             className={`flex flex-col ${
               phase === "showing-folder" || phase === "cancelling"
                 ? "min-h-0 items-start"
-                : "min-h-[60vh] items-center justify-center"
+                : "min-h-[60vh] w-full items-center justify-start pt-16 sm:pt-24"
             }`}
           >
             {/* Phase 1: quotes + CTA (idle or exiting). Fade out together when exiting; fade in when returning from cancel. */}
@@ -461,39 +436,10 @@ export function DashboardHome({ user, initialBoards }: DashboardHomeProps) {
                         : 1,
                 }}
               >
-                <div
-                  className="min-h-[10.75rem] mb-0 sm:mb-10 w-full flex flex-col items-start justify-start"
-                  style={{
-                    transition: `opacity ${QUOTE_TRANSITION_MS}ms ease-out, filter ${QUOTE_TRANSITION_MS}ms ease-out, transform ${QUOTE_TRANSITION_MS}ms ease-out`,
-                    opacity: quoteTransitioning ? 0 : 1,
-                    filter: quoteTransitioning ? "blur(8px)" : "blur(0)",
-                    transform: quoteTransitioning ? "translateY(8px)" : "translateY(0)",
-                  }}
-                >
-                  {quote && (
-                    <blockquote className="dashboard-quote-sm-only-pad text-[32px] text-foreground/90 font-medium">
-                      <span className="block leading-[44px]">
-                        <span
-                          className="inline-block -ml-[0.4em] mr-[0.02em]"
-                          aria-hidden="true"
-                        >
-                          &ldquo;
-                        </span>
-                        {quote.quote}&rdquo;
-                      </span>
-                      <footer
-                        className="mt-4 text-base text-muted-foreground"
-                        style={{
-                          transition: `opacity ${QUOTE_TRANSITION_MS}ms ease-out, transform ${QUOTE_TRANSITION_MS}ms ease-out`,
-                          transitionDelay: quoteTransitioning ? "0ms" : "100ms",
-                          opacity: quoteTransitioning ? 0 : 1,
-                          transform: quoteTransitioning ? "translateY(8px)" : "translateY(0)",
-                        }}
-                      >
-                        — {quote.author}
-                      </footer>
-                    </blockquote>
-                  )}
+                <div className="mb-0 sm:mb-10 w-full">
+                  <EmptyStateQuote
+                    startDelayMs={quotesEnteringFromCancel ? QUOTES_ENTER_MS : 0}
+                  />
                 </div>
                 <div className="hidden sm:block self-start">
                   <Button
